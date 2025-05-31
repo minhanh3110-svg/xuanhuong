@@ -8,7 +8,7 @@
         <h1>Danh Sách Mẫu Nuôi Cấy</h1>
     </div>
     <div class="col-md-4 text-end">
-        <a href="{{ url_for('them_mau_moi') }}" class="btn btn-primary">
+        <a href="{{ url_for('them_mau') }}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Thêm Mẫu Mới
         </a>
     </div>
@@ -29,7 +29,7 @@
                     </span>
                 </div>
                 <h6 class="card-subtitle mb-2 text-muted">
-                    <i class="fas fa-leaf"></i> {{ mau.loai_cay }}
+                    <i class="fas fa-leaf"></i> {{ mau.loai_cay or "Không rõ" }}
                 </h6>
                 <p class="card-text">{{ mau.mo_ta }}</p>
                 <div class="card-text small text-muted mb-3">
@@ -39,13 +39,14 @@
                     {% endif %}
                 </div>
                 <div class="card-actions">
-                    <a href="#" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ url_for('xem_mau', id=mau.id) }}" class="btn btn-outline-primary btn-sm">
                         <i class="fas fa-info-circle"></i> Chi tiết
                     </a>
-                    <a href="#" class="btn btn-outline-success btn-sm">
+                    <a href="{{ url_for('sua_mau', id=mau.id) }}" class="btn btn-outline-success btn-sm">
                         <i class="fas fa-edit"></i> Cập nhật
                     </a>
-                    <a href="#" class="btn btn-outline-danger btn-sm">
+                    <a href="{{ url_for('xoa_mau', id=mau.id) }}" class="btn btn-outline-danger btn-sm"
+                       onclick="return confirm('Bạn có chắc muốn xóa mẫu này?')">
                         <i class="fas fa-trash"></i> Xóa
                     </a>
                 </div>
@@ -56,7 +57,7 @@
     <div class="col-12">
         <div class="alert alert-info">
             <i class="fas fa-info-circle"></i> Chưa có mẫu nuôi cấy nào. 
-            <a href="{{ url_for('them_mau_moi') }}" class="alert-link">Thêm mẫu mới</a>
+            <a href="{{ url_for('them_mau') }}" class="alert-link">Thêm mẫu mới</a>
         </div>
     </div>
     {% endfor %}
@@ -147,4 +148,4 @@
     padding: 0.5em 1em;
 }
 </style>
-{% endblock %} 
+{% endblock %}

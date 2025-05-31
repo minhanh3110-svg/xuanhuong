@@ -39,9 +39,9 @@ app.logger.setLevel(logging.INFO)
 app.logger.info('Khởi động ứng dụng')
 
 # Cấu hình Mail
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True').lower() == 'true'
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
@@ -62,7 +62,8 @@ if database_url.startswith("postgres://"):
 app.config.update(
     SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
     SQLALCHEMY_DATABASE_URI=database_url,
-    SQLALCHEMY_TRACK_MODIFICATIONS=False
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    DEBUG=os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
 )
 
 db = SQLAlchemy(app)
@@ -505,4 +506,4 @@ app.register_blueprint(auth_blueprint, url_prefix='/auth')
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

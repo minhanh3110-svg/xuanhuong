@@ -1,44 +1,50 @@
 {% extends "base.html" %}
 
-{% block title %}Chi Tiết Mẫu{% endblock %}
+{% block title %}Chi Tiết Mẫu {{ mau.ten_mau }}{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Chi Tiết Mẫu Nuôi Cấy</h1>
+<h2 class="mb-4">Chi Tiết Mẫu: {{ mau.ten_mau }}</h2>
 
 <div class="card mb-4">
     <div class="card-body">
-        <h4 class="card-title">{{ mau.ten_mau }}</h4>
+        <h5 class="card-title">{{ mau.ten_mau }}</h5>
         <p class="card-text"><strong>Mã mẫu:</strong> {{ mau.ma_mau }}</p>
-        <p class="card-text"><strong>Trạng thái:</strong> {{ mau.trang_thai }}</p>
         <p class="card-text"><strong>Ngày cấy:</strong> {{ mau.ngay_cay.strftime('%d/%m/%Y') }}</p>
-        <p class="card-text"><strong>Phòng:</strong> {{ mau.phong.ten_phong if mau.phong else 'Chưa rõ' }}</p>
-        <p class="card-text"><strong>Mô tả:</strong> {{ mau.mo_ta or 'Không có mô tả' }}</p>
-
-        <a href="{{ url_for('sua_mau', id=mau.id) }}" class="btn btn-success">
+        <p class="card-text"><strong>Trạng thái:</strong> 
+            <span class="badge bg-{{ mau.trang_thai|status_color }}">{{ mau.trang_thai }}</span>
+        </p>
+        <p class="card-text"><strong>Phòng:</strong> {{ mau.phong.ten_phong if mau.phong else 'Chưa phân phòng' }}</p>
+        <p class="card-text"><strong>Mô tả:</strong><br>{{ mau.mo_ta or 'Không có mô tả' }}</p>
+        <a href="{{ url_for('sua_mau', id=mau.id) }}" class="btn btn-outline-primary btn-sm">
             <i class="fas fa-edit"></i> Cập nhật
         </a>
-        <a href="{{ url_for('xoa_mau', id=mau.id) }}" class="btn btn-danger" onclick="return confirm('Bạn chắc chắn muốn xóa?')">
+        <a href="{{ url_for('xoa_mau', id=mau.id) }}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa mẫu này?')">
             <i class="fas fa-trash"></i> Xóa
         </a>
     </div>
 </div>
 
-<h4 class="mb-3">Lịch sử nhật ký</h4>
+<h4 class="mt-4">Nhật Ký Mẫu</h4>
+<a href="{{ url_for('them_nhat_ky', mau_id=mau.id) }}" class="btn btn-success mb-3">
+    <i class="fas fa-plus-circle"></i> Thêm Nhật Ký
+</a>
+
 {% if nhat_ky_list %}
     <ul class="list-group">
-        {% for log in nhat_ky_list %}
+        {% for nk in nhat_ky_list %}
         <li class="list-group-item">
-            <div><strong>{{ log.ngay_ghi.strftime('%d/%m/%Y %H:%M') }}</strong> - {{ log.nguoi_ghi }}</div>
-            <div><strong>Trạng thái:</strong> {{ log.trang_thai }}</div>
-            <div>{{ log.mo_ta }}</div>
+            <div class="d-flex justify-content-between">
+                <div>
+                    <strong>{{ nk.ngay_ghi.strftime('%d/%m/%Y %H:%M') }}</strong> - 
+                    <span class="badge bg-secondary">{{ nk.trang_thai }}</span>
+                    <p class="mb-1">{{ nk.mo_ta }}</p>
+                    <small>Người ghi: {{ nk.nguoi_ghi }}</small>
+                </div>
+            </div>
         </li>
         {% endfor %}
     </ul>
 {% else %}
-    <div class="alert alert-info">Chưa có nhật ký nào.</div>
+    <div class="alert alert-info">Chưa có nhật ký nào cho mẫu này.</div>
 {% endif %}
-
-<a href="{{ url_for('them_nhat_ky', mau_id=mau.id) }}" class="btn btn-primary mt-3">
-    <i class="fas fa-plus"></i> Thêm Nhật Ký
-</a>
 {% endblock %}

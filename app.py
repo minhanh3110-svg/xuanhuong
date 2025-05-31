@@ -446,7 +446,17 @@ def tao_admin():
     db.session.add(user)
     db.session.commit()
     return "Đã tạo tài khoản admin với mật khẩu 123456"
-
+@app.route('/tao-admin')
+def tao_admin():
+    if User.query.filter_by(username='admin').first():
+        return "⚠️ Tài khoản admin đã tồn tại. Không cần tạo lại."
+    
+    user = User(username='admin', name='Administrator', role='admin')
+    user.set_password('123456')  # Mật khẩu mặc định
+    db.session.add(user)
+    db.session.commit()
+    
+    return "✅ Đã tạo tài khoản admin. Tên đăng nhập: admin / Mật khẩu: 123456"
 if __name__ == '__main__':
     init_db()
     app.run(debug=True) 

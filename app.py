@@ -1,24 +1,53 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
-import os
-from sqlalchemy import func, case
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_principal import Principal, Permission, RoleNeed, identity_loaded, UserNeed
-import openpyxl
-from reportlab.pdfgen import canvas
-from io import BytesIO
-import json
-import pandas as pd
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from datetime import datetime
+from sqlalchemy import func
+import os
+import logging
+from logging.handlers import RotatingFileHandler
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import pyotp
+import qrcode
 import io
+import base64
+from itsdangerous import URLSafeTimedSerializer as Serializer
+from flask_mail import Mail, Message
 
+# Cấu hình logging
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+))
+file_handler.setLevel(logging.INFO)
+
+# Khởi tạo Flask app
 app = Flask(__name__)
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+app.logger.info('Khởi động ứng dụng')
 
-# Cấu hình database và bảo mật
+# Cấu hình Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
+mail = Mail(app)
+
+# Cấu hình Rate Limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
+
+# Cấu hình database
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
@@ -30,81 +59,124 @@ app.config.update(
 )
 
 db = SQLAlchemy(app)
+
+# Cấu hình Flask-Login
 login_manager = LoginManager()
-login_manager.login_view = 'login'
+login_manager.login_view = 'auth.login'
 login_manager.init_app(app)
-principals = Principal(app)
-
-# Định nghĩa permissions
-admin_permission = Permission(RoleNeed('admin'))
-manager_permission = Permission(RoleNeed('manager'))
-staff_permission = Permission(RoleNeed('staff'))
-
-# Theme handling
-@app.before_request
-def before_request():
-    if 'theme' not in session:
-        session['theme'] = 'light'
-
-@app.route('/toggle-theme')
-def toggle_theme():
-    session['theme'] = 'dark' if session.get('theme') == 'light' else 'light'
-    return redirect(request.referrer or url_for('index'))
 
 # Models
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default='user')
-    active = db.Column(db.Boolean, default=True)
-    
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    full_name = db.Column(db.String(100), nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(20), default='user')
+    department = db.Column(db.String(100))
+    position = db.Column(db.String(100))
+    is_active = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime)
+    otp_secret = db.Column(db.String(32))
+    otp_enabled = db.Column(db.Boolean, default=False)
+    notifications = db.relationship('Notification', backref='user', lazy=True)
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-        
+
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+        
+    def get_otp_uri(self):
+        if self.otp_secret:
+            return pyotp.totp.TOTP(self.otp_secret).provisioning_uri(
+                name=self.username,
+                issuer_name="Hệ thống Quản lý Nuôi Cấy Mô"
+            )
+        return None
+
+    def verify_otp(self, otp_code):
+        if self.otp_secret and self.otp_enabled:
+            totp = pyotp.TOTP(self.otp_secret)
+            return totp.verify(otp_code)
+        return True
+
+    def has_permission(self, permission):
+        permissions = {
+            'admin': ['manage_users', 'manage_samples', 'manage_rooms', 'view_reports', 'approve_users'],
+            'manager': ['manage_samples', 'manage_rooms', 'view_reports'],
+            'researcher': ['manage_samples', 'view_reports'],
+            'user': ['view_samples']
+        }
+        return permission in permissions.get(self.role, [])
+
+    def generate_confirmation_token(self):
+        s = Serializer(app.config['SECRET_KEY'])
+        return s.dumps({'user_id': self.id})
+
+    @staticmethod
+    def verify_confirmation_token(token, expiration=3600):
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token, max_age=expiration)
+        except:
+            return None
+        return User.query.get(data['user_id'])
+
+class Mau(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ma_mau = db.Column(db.String(50), unique=True, nullable=False)
+    ten = db.Column(db.String(100), nullable=False)
+    mo_ta = db.Column(db.Text)
+    ngay_cay = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    trang_thai = db.Column(db.String(50))
+    phong_id = db.Column(db.Integer, db.ForeignKey('phong.id'), nullable=False)
+    nhat_ky = db.relationship('NhatKy', backref='mau', lazy=True)
+
+class Phong(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ten = db.Column(db.String(100), nullable=False)
+    nhiet_do = db.Column(db.Float)
+    do_am = db.Column(db.Float)
+    mau_list = db.relationship('Mau', backref='phong', lazy=True)
+
+class NhatKy(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    mau_id = db.Column(db.Integer, db.ForeignKey('mau.id'), nullable=False)
+    ngay_ghi = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    noi_dung = db.Column(db.Text, nullable=False)
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    type = db.Column(db.String(50))  # 'alert', 'warning', 'info'
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    read = db.Column(db.Boolean, default=False)
+    
+    @staticmethod
+    def create_temp_alert(phong_id, temp, humidity):
+        phong = Phong.query.get(phong_id)
+        if not phong:
+            return
+        
+        if temp > 30 or temp < 15 or humidity > 80 or humidity < 40:
+            users = User.query.filter_by(role='admin').all()
+            for user in users:
+                notif = Notification(
+                    user_id=user.id,
+                    title=f'Cảnh báo điều kiện môi trường - Phòng {phong.ten}',
+                    message=f'Nhiệt độ: {temp}°C, Độ ẩm: {humidity}%',
+                    type='alert'
+                )
+                db.session.add(notif)
+            db.session.commit()
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-
-@identity_loaded.connect_via(app)
-def on_identity_loaded(sender, identity):
-    if hasattr(current_user, 'id'):
-        identity.provides.add(UserNeed(current_user.id))
-        if hasattr(current_user, 'role'):
-            identity.provides.add(RoleNeed(current_user.role))
-
-class Mau(db.Model):
-    __tablename__ = 'mau'
-    id = db.Column(db.Integer, primary_key=True)
-    ma_mau = db.Column(db.String(50), unique=True, nullable=False)
-    ten_mau = db.Column(db.String(200), nullable=False)
-    ngay_cay = db.Column(db.DateTime, nullable=False)
-    trang_thai = db.Column(db.String(50), nullable=False)
-    mo_ta = db.Column(db.Text)
-    phong_id = db.Column(db.Integer, db.ForeignKey('phong.id'))
-    nhat_ky = db.relationship('NhatKy', backref='mau', lazy=True)
-
-class Phong(db.Model):
-    __tablename__ = 'phong'
-    id = db.Column(db.Integer, primary_key=True)
-    ten_phong = db.Column(db.String(100), nullable=False)
-    nhiet_do = db.Column(db.Float)
-    do_am = db.Column(db.Float)
-    ghi_chu = db.Column(db.Text)
-    mau_list = db.relationship('Mau', backref='phong', lazy=True)
-
-class NhatKy(db.Model):
-    __tablename__ = 'nhat_ky'
-    id = db.Column(db.Integer, primary_key=True)
-    mau_id = db.Column(db.Integer, db.ForeignKey('mau.id'), nullable=False)
-    ngay_ghi = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    trang_thai = db.Column(db.String(50), nullable=False)
-    mo_ta = db.Column(db.Text)
-    nguoi_ghi = db.Column(db.String(80), nullable=False)
 
 # Template filters
 @app.template_filter('status_color')
@@ -117,334 +189,335 @@ def status_color(status):
     }
     return colors.get(status, 'secondary')
 
-# Routes
-@app.route('/')
-def index():
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))
+# Đăng nhập / đăng xuất
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        otp_code = request.form.get('otp_code')
         
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            if user.otp_enabled and not user.verify_otp(otp_code):
+                flash('Mã OTP không đúng', 'error')
+                return render_template('login.html', show_otp=True)
+            
+            login_user(user)
+            app.logger.info(f'User {username} đăng nhập thành công')
+            flash('Đăng nhập thành công!', 'success')
+            return redirect(url_for('index'))
+        flash('Sai tài khoản hoặc mật khẩu', 'error')
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Đăng xuất thành công', 'success')
+    return redirect(url_for('login'))
+
+@app.route('/create-admin')
+def create_admin():
+    if User.query.filter_by(username='admin').first():
+        return "Tài khoản admin đã tồn tại."
+    user = User(username='admin', role='admin')
+    user.set_password('123456')
+    db.session.add(user)
+    db.session.commit()
+    return "Tạo tài khoản admin thành công."
+
+@app.route('/setup-2fa')
+@login_required
+def setup_2fa():
+    if not current_user.otp_secret:
+        current_user.otp_secret = pyotp.random_base32()
+        db.session.commit()
+    
+    # Generate QR code
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(current_user.get_otp_uri())
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Convert to base64
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+    
+    return render_template('setup_2fa.html', qr_code=qr_base64)
+
+@app.route('/enable-2fa', methods=['POST'])
+@login_required
+def enable_2fa():
+    otp_code = request.form.get('otp_code')
+    if current_user.verify_otp(otp_code):
+        current_user.otp_enabled = True
+        db.session.commit()
+        app.logger.info(f'User {current_user.username} đã bật 2FA')
+        flash('Xác thực 2 lớp đã được bật', 'success')
+    else:
+        flash('Mã OTP không đúng', 'error')
+    return redirect(url_for('setup_2fa'))
+
+@app.route('/disable-2fa', methods=['POST'])
+@login_required
+def disable_2fa():
+    otp_code = request.form.get('otp_code')
+    if current_user.verify_otp(otp_code):
+        current_user.otp_enabled = False
+        current_user.otp_secret = None
+        db.session.commit()
+        app.logger.info(f'User {current_user.username} đã tắt 2FA')
+        flash('Xác thực 2 lớp đã được tắt', 'success')
+    else:
+        flash('Mã OTP không đúng', 'error')
+    return redirect(url_for('setup_2fa'))
+
+# Trang chủ
+@app.route('/')
+@login_required
+def index():
     page = request.args.get('page', 1, type=int)
     per_page = 9
-    
-    # Lấy các tham số tìm kiếm
     search = request.args.get('search', '')
     status = request.args.get('status', '')
     room = request.args.get('room', '')
-    
-    # Query cơ bản
+
     query = Mau.query
-    
-    # Áp dụng các bộ lọc
     if search:
-        query = query.filter(Mau.ten_mau.ilike(f'%{search}%'))
+        query = query.filter(Mau.ten.ilike(f'%{search}%'))
     if status:
         query = query.filter(Mau.trang_thai == status)
     if room:
         query = query.filter(Mau.phong_id == room)
-    
-    # Lấy thống kê
+
     stats = {
         'new_count': Mau.query.filter_by(trang_thai='Mới tạo').count(),
         'developing_count': Mau.query.filter_by(trang_thai='Đang phát triển').count(),
         'completed_count': Mau.query.filter_by(trang_thai='Đã hoàn thành').count(),
         'failed_count': Mau.query.filter_by(trang_thai='Thất bại').count()
     }
-    
-    # Lấy thống kê theo phòng
+
     room_stats = db.session.query(
-        Phong.ten_phong.label('name'),
+        Phong.ten.label('name'),
         func.count(Mau.id).label('count')
-    ).outerjoin(Mau).group_by(Phong.id, Phong.ten_phong).all()
-    
-    room_stats = [{'name': r.name, 'count': r.count} for r in room_stats]
-    
+    ).outerjoin(Mau).group_by(Phong.id, Phong.ten).all()
+
     mau_pagination = query.order_by(Mau.ngay_cay.desc()).paginate(page=page, per_page=per_page)
     rooms = Phong.query.all()
-    
-    return render_template('index.html',
-                         mau_pagination=mau_pagination,
-                         stats=stats,
-                         room_stats=room_stats,
-                         rooms=rooms,
-                         theme=session.get('theme', 'light'))
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-        
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        
-        if not username or not password:
-            flash('Vui lòng nhập đầy đủ thông tin đăng nhập', 'error')
-            return redirect(url_for('login'))
-            
-        user = User.query.filter_by(username=username).first()
-        if user and user.check_password(password):
-            login_user(user)
-            next_page = request.args.get('next')
-            flash('Đăng nhập thành công!', 'success')
-            return redirect(next_page or url_for('index'))
-            
-        flash('Sai tên đăng nhập hoặc mật khẩu', 'error')
-    return render_template('login.html', theme=session.get('theme', 'light'))
+    return render_template('index.html', mau_pagination=mau_pagination, stats=stats, room_stats=room_stats, rooms=rooms)
 
-@app.route('/logout')
+@app.route('/them-mau-moi', methods=['GET', 'POST'])
 @login_required
-def logout():
-    logout_user()
-    return redirect(url_for('login'))
-
-@app.route('/mau/them', methods=['GET', 'POST'])
-@login_required
-def them_mau():
+def them_mau_moi():
     if request.method == 'POST':
-        mau_moi = Mau(
-            ma_mau=request.form['ma_mau'],
-            ten_mau=request.form['ten_mau'],
-            ngay_cay=datetime.strptime(request.form['ngay_cay'], '%Y-%m-%d'),
-            trang_thai=request.form['trang_thai'],
-            mo_ta=request.form['mo_ta'],
-            phong_id=request.form['phong_id']
-        )
-        db.session.add(mau_moi)
-        db.session.commit()
-        flash('Thêm mẫu thành công')
-        return redirect(url_for('index'))
+        ma_mau = request.form.get('ma_mau')
+        ten = request.form.get('ten')
+        mo_ta = request.form.get('mo_ta')
+        phong_id = request.form.get('phong_id')
+
+        if not all([ma_mau, ten, phong_id]):
+            flash('Vui lòng điền đầy đủ thông tin bắt buộc', 'error')
+            return redirect(url_for('them_mau_moi'))
+
+        try:
+            mau_moi = Mau(ma_mau=ma_mau, ten=ten, mo_ta=mo_ta, phong_id=phong_id, trang_thai='Mới tạo')
+            db.session.add(mau_moi)
+            db.session.commit()
+            flash('Thêm mẫu mới thành công!', 'success')
+            return redirect(url_for('index'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+
     phong_list = Phong.query.all()
-    return render_template('them_mau.html', phong_list=phong_list)
+    return render_template('them_mau_moi.html', phong_list=phong_list)
 
-@app.route('/mau/<int:id>/sua', methods=['GET', 'POST'])
+@app.route('/chi-tiet-mau/<int:id>')
 @login_required
-def sua_mau(id):
+def chi_tiet_mau(id):
+    mau = Mau.query.get_or_404(id)
+    return render_template('chi_tiet_mau.html', mau=mau)
+
+@app.route('/cap-nhat-mau/<int:id>', methods=['GET', 'POST'])
+@login_required
+def cap_nhat_mau(id):
     mau = Mau.query.get_or_404(id)
     if request.method == 'POST':
-        mau.ma_mau = request.form['ma_mau']
-        mau.ten_mau = request.form['ten_mau']
-        mau.ngay_cay = datetime.strptime(request.form['ngay_cay'], '%Y-%m-%d')
-        mau.trang_thai = request.form['trang_thai']
-        mau.mo_ta = request.form['mo_ta']
-        mau.phong_id = request.form['phong_id']
-        db.session.commit()
-        flash('Cập nhật mẫu thành công')
-        return redirect(url_for('index'))
-    phong_list = Phong.query.all()
-    return render_template('sua_mau.html', mau=mau, phong_list=phong_list)
+        try:
+            mau.ten = request.form.get('ten')
+            mau.mo_ta = request.form.get('mo_ta')
+            mau.trang_thai = request.form.get('trang_thai')
+            mau.phong_id = request.form.get('phong_id')
+            db.session.commit()
+            flash('Cập nhật mẫu thành công!', 'success')
+            return redirect(url_for('index'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Có lỗi xảy ra: {str(e)}', 'error')
 
-@app.route('/mau/<int:id>/xoa')
+    phong_list = Phong.query.all()
+    return render_template('cap_nhat_mau.html', mau=mau, phong_list=phong_list)
+
+@app.route('/xoa-mau/<int:id>')
 @login_required
 def xoa_mau(id):
-    mau = Mau.query.get_or_404(id)
-    db.session.delete(mau)
-    db.session.commit()
-    flash('Xóa mẫu thành công')
-    return redirect(url_for('index'))
+    if current_user.role != 'admin':
+        flash('Bạn không có quyền xóa mẫu!', 'error')
+        return redirect(url_for('index'))
 
-@app.route('/nhat-ky/them/<int:mau_id>', methods=['GET', 'POST'])
-@login_required
-def them_nhat_ky(mau_id):
-    if request.method == 'POST':
-        nhat_ky_moi = NhatKy(
-            mau_id=mau_id,
-            trang_thai=request.form['trang_thai'],
-            mo_ta=request.form['mo_ta'],
-            nguoi_ghi=current_user.username
-        )
-        db.session.add(nhat_ky_moi)
+    mau = Mau.query.get_or_404(id)
+    try:
+        db.session.delete(mau)
         db.session.commit()
-        flash('Thêm nhật ký thành công')
-        return redirect(url_for('xem_mau', id=mau_id))
-    return render_template('them_nhat_ky.html', mau_id=mau_id)
+        flash('Xóa mẫu thành công!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+
+    return redirect(url_for('index'))
 
 @app.route('/phong-moi-truong')
 @login_required
 def phong_moi_truong():
     phong_list = Phong.query.all()
-    return render_template('phong_moi_truong.html', 
-                         phong_list=phong_list,
-                         theme=session.get('theme', 'light'))
+    return render_template('phong_moi_truong.html', phong_list=phong_list)
+
+@app.route('/them-phong-moi', methods=['GET', 'POST'])
+@login_required
+def them_phong_moi():
+    if request.method == 'POST':
+        ten_phong = request.form.get('ten_phong')
+        nhiet_do = request.form.get('nhiet_do')
+        do_am = request.form.get('do_am')
+
+        if not ten_phong:
+            flash('Vui lòng nhập tên phòng', 'error')
+            return redirect(url_for('them_phong_moi'))
+
+        try:
+            phong_moi = Phong(ten=ten_phong, nhiet_do=float(nhiet_do) if nhiet_do else None, do_am=float(do_am) if do_am else None)
+            db.session.add(phong_moi)
+            db.session.commit()
+            flash('Thêm phòng mới thành công!', 'success')
+            return redirect(url_for('phong_moi_truong'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+
+    return render_template('them_phong_moi.html')
+
+@app.route('/them-nhat-ky/<int:mau_id>', methods=['POST'])
+@login_required
+def them_nhat_ky(mau_id):
+    noi_dung = request.form.get('noi_dung')
+    if not noi_dung:
+        flash('Vui lòng nhập nội dung nhật ký', 'error')
+        return redirect(url_for('chi_tiet_mau', id=mau_id))
+
+    try:
+        nhat_ky = NhatKy(mau_id=mau_id, noi_dung=noi_dung)
+        db.session.add(nhat_ky)
+        db.session.commit()
+        flash('Thêm nhật ký thành công!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+
+    return redirect(url_for('chi_tiet_mau', id=mau_id))
 
 @app.route('/api/cap-nhat-moi-truong/<int:phong_id>', methods=['POST'])
 @login_required
 def cap_nhat_moi_truong(phong_id):
+    if not request.is_json:
+        return jsonify({'status': 'error', 'message': 'Yêu cầu phải là JSON'}), 400
+
     phong = Phong.query.get_or_404(phong_id)
     data = request.get_json()
-    
+
     try:
-        phong.nhiet_do = data.get('nhiet_do')
-        phong.do_am = data.get('do_am')
+        nhiet_do = data.get('nhiet_do')
+        do_am = data.get('do_am')
+
+        if nhiet_do is None or do_am is None:
+            return jsonify({
+                'status': 'error',
+                'message': 'Thiếu thông tin nhiệt độ hoặc độ ẩm'
+            }), 400
+
+        # Validate ranges
+        if not (-50 <= float(nhiet_do) <= 100):
+            return jsonify({
+                'status': 'error',
+                'message': 'Nhiệt độ không hợp lệ'
+            }), 400
+
+        if not (0 <= float(do_am) <= 100):
+            return jsonify({
+                'status': 'error',
+                'message': 'Độ ẩm không hợp lệ'
+            }), 400
+
+        phong.nhiet_do = float(nhiet_do)
+        phong.do_am = float(do_am)
+        
+        # Create notification if needed
+        Notification.create_temp_alert(phong_id, float(nhiet_do), float(do_am))
+        
         db.session.commit()
-        return jsonify({'status': 'success', 'message': 'Cập nhật thành công'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'status': 'error', 'message': f'Lỗi: {str(e)}'})
-
-@app.route('/phong/them', methods=['GET', 'POST'])
-@login_required
-def them_phong():
-    if request.method == 'POST':
-        try:
-            phong_moi = Phong(
-                ten_phong=request.form['ten_phong'],
-                nhiet_do=float(request.form['nhiet_do']) if request.form['nhiet_do'] else None,
-                do_am=float(request.form['do_am']) if request.form['do_am'] else None,
-                ghi_chu=request.form['ghi_chu']
-            )
-            db.session.add(phong_moi)
-            db.session.commit()
-            flash('Thêm phòng thành công', 'success')
-            return redirect(url_for('phong_moi_truong'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Lỗi khi thêm phòng: {str(e)}', 'error')
-    return render_template('them_phong.html', theme=session.get('theme', 'light'))
-
-@app.route('/phong/<int:id>/sua', methods=['GET', 'POST'])
-@login_required
-def sua_phong(id):
-    phong = Phong.query.get_or_404(id)
-    if request.method == 'POST':
-        try:
-            phong.ten_phong = request.form['ten_phong']
-            phong.nhiet_do = float(request.form['nhiet_do']) if request.form['nhiet_do'] else None
-            phong.do_am = float(request.form['do_am']) if request.form['do_am'] else None
-            phong.ghi_chu = request.form['ghi_chu']
-            db.session.commit()
-            flash('Cập nhật phòng thành công', 'success')
-            return redirect(url_for('phong_moi_truong'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Lỗi khi cập nhật phòng: {str(e)}', 'error')
-    return render_template('sua_phong.html', phong=phong, theme=session.get('theme', 'light'))
-
-@app.route('/phong/<int:id>/xoa')
-@login_required
-def xoa_phong(id):
-    phong = Phong.query.get_or_404(id)
-    try:
-        db.session.delete(phong)
-        db.session.commit()
-        flash('Xóa phòng thành công', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Lỗi khi xóa phòng: {str(e)}', 'error')
-    return redirect(url_for('phong_moi_truong'))
-
-# Routes cho xuất báo cáo
-@app.route('/bao-cao/excel')
-@login_required
-def xuat_excel():
-    mau_list = Mau.query.all()
-    data = []
-    for mau in mau_list:
-        data.append({
-            'Mã mẫu': mau.ma_mau,
-            'Tên mẫu': mau.ten_mau,
-            'Ngày cấy': mau.ngay_cay,
-            'Trạng thái': mau.trang_thai,
-            'Phòng': Phong.query.get(mau.phong_id).ten_phong if mau.phong_id else ''
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'nhiet_do': phong.nhiet_do,
+                'do_am': phong.do_am
+            }
         })
-    
-    df = pd.DataFrame(data)
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False)
-    output.seek(0)
-    
-    return send_file(
-        output,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name='bao_cao_mau.xlsx'
+    except ValueError:
+        return jsonify({
+            'status': 'error',
+            'message': 'Giá trị nhiệt độ hoặc độ ẩm không hợp lệ'
+        }), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'Lỗi hệ thống: {str(e)}'
+        }), 500
+
+@app.route('/notifications')
+@login_required
+def notifications():
+    page = request.args.get('page', 1, type=int)
+    notifications = Notification.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Notification.created_at.desc()).paginate(
+        page=page, per_page=10
     )
+    return render_template('notifications.html', notifications=notifications)
 
-@app.route('/bao-cao/pdf')
+@app.route('/mark-notification-read/<int:notif_id>')
 @login_required
-def xuat_pdf():
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
-    elements = []
+def mark_notification_read(notif_id):
+    notif = Notification.query.get_or_404(notif_id)
+    if notif.user_id != current_user.id:
+        flash('Không có quyền truy cập thông báo này', 'error')
+        return redirect(url_for('notifications'))
     
-    mau_list = Mau.query.all()
-    data = [['Mã mẫu', 'Tên mẫu', 'Ngày cấy', 'Trạng thái', 'Phòng']]
-    for mau in mau_list:
-        data.append([
-            mau.ma_mau,
-            mau.ten_mau,
-            mau.ngay_cay.strftime('%Y-%m-%d'),
-            mau.trang_thai,
-            Phong.query.get(mau.phong_id).ten_phong if mau.phong_id else ''
-        ])
-    
-    table = Table(data)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 12),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    elements.append(table)
-    
-    doc.build(elements)
-    buffer.seek(0)
-    return send_file(
-        buffer,
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name='bao_cao_mau.pdf'
-    )
-
-# API cho biểu đồ thống kê
-@app.route('/api/thong-ke-trang-thai')
-@login_required
-def api_thong_ke_trang_thai():
-    stats = {
-        'labels': ['Mới tạo', 'Đang phát triển', 'Đã hoàn thành', 'Thất bại'],
-        'data': [
-            Mau.query.filter_by(trang_thai='Mới tạo').count(),
-            Mau.query.filter_by(trang_thai='Đang phát triển').count(),
-            Mau.query.filter_by(trang_thai='Đã hoàn thành').count(),
-            Mau.query.filter_by(trang_thai='Thất bại').count()
-        ]
-    }
-    return jsonify(stats)
-
-@app.route('/api/thong-ke-nang-suat')
-@login_required
-def api_thong_ke_nang_suat():
-    # Thống kê tỷ lệ thành công theo tháng
-    success_rates = db.session.query(
-        func.date_trunc('month', Mau.ngay_cay).label('month'),
-        func.count(Mau.id).label('total'),
-        func.sum(case([(Mau.trang_thai == 'Đã hoàn thành', 1)], else_=0)).label('success')
-    ).group_by('month').order_by('month').all()
-    
-    stats = {
-        'labels': [r.month.strftime('%m/%Y') for r in success_rates],
-        'data': [round((r.success / r.total * 100), 2) if r.total > 0 else 0 for r in success_rates]
-    }
-    return jsonify(stats)
-
-@app.route('/tao-admin')
-def tao_admin():
-    if User.query.filter_by(username='admin').first():
-        return "⚠️ Tài khoản admin đã tồn tại. Không cần tạo lại."
-
-    user = User(username='admin', name='Administrator', role='admin')
-    user.set_password('123456')  # Mật khẩu mặc định
-    db.session.add(user)
+    notif.read = True
     db.session.commit()
+    return redirect(url_for('notifications'))
 
-    return "✅ Đã tạo tài khoản admin. Đăng nhập với user: admin / pass: 123456"
+@app.context_processor
+def inject_notifications():
+    if current_user.is_authenticated:
+        unread_count = Notification.query.filter_by(
+            user_id=current_user.id,
+            read=False
+        ).count()
+        return {'unread_notifications': unread_count}
+    return {'unread_notifications': 0}
 
 if __name__ == '__main__':
     with app.app_context():

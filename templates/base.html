@@ -40,7 +40,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('them_mau_moi') }}">
+                        <a class="nav-link" href="{{ url_for('them_mau') }}">
                             <i class="fas fa-plus"></i> Thêm Mẫu Mới
                         </a>
                     </li>
@@ -53,6 +53,20 @@
                         <a class="nav-link" href="{{ url_for('them_phong_moi') }}">
                             <i class="fas fa-door-open"></i> Thêm Phòng Mới
                         </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('xuat_excel') }}">📥 Xuất Excel</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('xuat_pdf') }}">📄 Xuất PDF</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('toggle_theme') }}">
+                            🌗 Đổi Giao Diện
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">🚪 Đăng Xuất</a>
                     </li>
                 </ul>
             </div>
@@ -83,8 +97,3 @@
     </script>
 </body>
 </html>
-<li><a href="/xuat-excel">📥 Xuất Excel</a></li>
-<li><a href="/bieu-do-nang-suat">📊 Biểu đồ</a></li>
-<li><a href="/dark-mode">🌙 Giao diện tối</a></li>
-<li><a href="/light-mode">🌞 Giao diện sáng</a></li>
-<li><a href="/logout">🚪 Đăng xuất</a></li>

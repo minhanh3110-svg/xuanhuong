@@ -16,6 +16,10 @@ import base64
 from itsdangerous import URLSafeTimedSerializer as Serializer
 from flask_mail import Mail, Message
 import secrets
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Cấu hình logging
 if not os.path.exists('logs'):
@@ -64,6 +68,8 @@ db = SQLAlchemy(app)
 # Cấu hình Flask-Login
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
+login_manager.login_message = 'Vui lòng đăng nhập để truy cập trang này.'
+login_manager.login_message_category = 'warning'
 login_manager.init_app(app)
 
 # Models
@@ -244,91 +250,6 @@ def status_color(status):
         'Thất bại': 'danger'
     }
     return colors.get(status, 'secondary')
-
-# Đăng nhập / đăng xuất
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        otp_code = request.form.get('otp_code')
-        
-        user = User.query.filter_by(username=username).first()
-        if user and user.check_password(password):
-            if user.otp_enabled and not user.verify_otp(otp_code):
-                flash('Mã OTP không đúng', 'error')
-                return render_template('login.html', show_otp=True)
-            
-            login_user(user)
-            app.logger.info(f'User {username} đăng nhập thành công')
-            flash('Đăng nhập thành công!', 'success')
-            return redirect(url_for('index'))
-        flash('Sai tài khoản hoặc mật khẩu', 'error')
-    return render_template('login.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash('Đăng xuất thành công', 'success')
-    return redirect(url_for('login'))
-
-@app.route('/create-admin')
-def create_admin():
-    if User.query.filter_by(username='admin').first():
-        return "Tài khoản admin đã tồn tại."
-    user = User(username='admin', role='admin')
-    user.set_password('123456')
-    db.session.add(user)
-    db.session.commit()
-    return "Tạo tài khoản admin thành công."
-
-@app.route('/setup-2fa')
-@login_required
-def setup_2fa():
-    if not current_user.otp_secret:
-        current_user.otp_secret = pyotp.random_base32()
-        db.session.commit()
-    
-    # Generate QR code
-    qr = qrcode.QRCode(version=1, box_size=10, border=5)
-    qr.add_data(current_user.get_otp_uri())
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    
-    # Convert to base64
-    buffered = io.BytesIO()
-    img.save(buffered, format="PNG")
-    qr_base64 = base64.b64encode(buffered.getvalue()).decode()
-    
-    return render_template('setup_2fa.html', qr_code=qr_base64)
-
-@app.route('/enable-2fa', methods=['POST'])
-@login_required
-def enable_2fa():
-    otp_code = request.form.get('otp_code')
-    if current_user.verify_otp(otp_code):
-        current_user.otp_enabled = True
-        db.session.commit()
-        app.logger.info(f'User {current_user.username} đã bật 2FA')
-        flash('Xác thực 2 lớp đã được bật', 'success')
-    else:
-        flash('Mã OTP không đúng', 'error')
-    return redirect(url_for('setup_2fa'))
-
-@app.route('/disable-2fa', methods=['POST'])
-@login_required
-def disable_2fa():
-    otp_code = request.form.get('otp_code')
-    if current_user.verify_otp(otp_code):
-        current_user.otp_enabled = False
-        current_user.otp_secret = None
-        db.session.commit()
-        app.logger.info(f'User {current_user.username} đã tắt 2FA')
-        flash('Xác thực 2 lớp đã được tắt', 'success')
-    else:
-        flash('Mã OTP không đúng', 'error')
-    return redirect(url_for('setup_2fa'))
 
 # Trang chủ
 @app.route('/')
@@ -574,6 +495,10 @@ def inject_notifications():
         ).count()
         return {'unread_notifications': unread_count}
     return {'unread_notifications': 0}
+
+# Register blueprints
+from auth import auth as auth_blueprint
+app.register_blueprint(auth_blueprint)
 
 if __name__ == '__main__':
     with app.app_context():

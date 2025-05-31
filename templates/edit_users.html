@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h2 class="fw-bold text-primary mb-0">
+                    <i class="fas fa-user-edit me-2"></i>Chỉnh sửa người dùng
+                </h2>
+                <a href="{{ url_for('auth.manage_users') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Quay lại
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-body p-4">
+                    <form method="post" class="needs-validation" novalidate>
+                        <div class="row">
+                            <!-- Thông tin cơ bản -->
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating">
+                                    <input type="text" 
+                                           class="form-control bg-light" 
+                                           value="{{ user.username }}"
+                                           readonly>
+                                    <label>
+                                        <i class="fas fa-user text-muted me-2"></i>Tên đăng nhập
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating">
+                                    <input type="email" 
+                                           class="form-control bg-light" 
+                                           id="email" 
+                                           name="email" 
+                                           value="{{ user.email }}"
+                                           required>
+                                    <label for="email">
+                                        <i class="fas fa-envelope text-muted me-2"></i>Email
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Vui lòng nhập email hợp lệ
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 mb-4">
+                                <div class="form-floating">
+                                    <input type="text" 
+                                           class="form-control bg-light" 
+                                           id="full_name" 
+                                           name="full_name" 
+                                           value="{{ user.full_name }}"
+                                           required>
+                                    <label for="full_name">
+                                        <i class="fas fa-id-card text-muted me-2"></i>Họ và tên
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Vui lòng nhập họ và tên
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Thông tin công việc -->
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating">
+                                    <select class="form-select bg-light" 
+                                            id="department" 
+                                            name="department">
+                                        <option value="">Chọn phòng ban</option>
+                                        {% for department in departments %}
+                                        <option value="{{ department }}" 
+                                                {% if department == user.department %}selected{% endif %}>
+                                            {{ department }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <label for="department">
+                                        <i class="fas fa-building text-muted me-2"></i>Phòng ban
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating">
+                                    <select class="form-select bg-light" 
+                                            id="position" 
+                                            name="position">
+                                        <option value="">Chọn vị trí</option>
+                                        {% for position in positions %}
+                                        <option value="{{ position }}"
+                                                {% if position == user.position %}selected{% endif %}>
+                                            {{ position }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <label for="position">
+                                        <i class="fas fa-briefcase text-muted me-2"></i>Vị trí
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Phân quyền -->
+                            <div class="col-md-6 mb-4">
+                                <div class="form-floating">
+                                    <select class="form-select bg-light" 
+                                            id="role" 
+                                            name="role"
+                                            required>
+                                        {% for role in roles %}
+                                        <option value="{{ role }}"
+                                                {% if role == user.role %}selected{% endif %}>
+                                            {{ role|title }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <label for="role">
+                                        <i class="fas fa-user-shield text-muted me-2"></i>Vai trò
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-4">
+                                <div class="form-check form-switch ps-5 pt-3">
+                                    <input type="checkbox" 
+                                           class="form-check-input" 
+                                           id="is_active" 
+                                           name="is_active"
+                                           {% if user.is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_active">
+                                        Kích hoạt tài khoản
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary py-3">
+                                <i class="fas fa-save me-2"></i>Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lịch sử hoạt động -->
+            <div class="card mt-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Lịch sử hoạt động
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for activity in user.activities[-5:] %}
+                        <div class="list-group-item px-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-{{ 'sign-in-alt' if activity.action == 'login' 
+                                                          else 'sign-out-alt' if activity.action == 'logout'
+                                                          else 'key' if 'password' in activity.action
+                                                          else 'shield-alt' if '2fa' in activity.action
+                                                          else 'edit' }} text-primary"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">{{ activity.action_text }}</h6>
+                                        <small class="text-muted">{{ activity.timestamp.strftime('%d/%m/%Y %H:%M') }}</small>
+                                    </div>
+                                    {% if activity.details %}
+                                    <small class="text-muted">{{ activity.details }}</small>
+                                    {% endif %}
+                                    <div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-map-marker-alt me-1"></i>{{ activity.ip_address }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-info-circle me-2"></i>Chưa có hoạt động nào
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %} 

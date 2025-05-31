@@ -1,129 +1,111 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container mt-5">
     <div class="row">
         <!-- Thông tin cá nhân -->
-        <div class="col-lg-4 mb-4">
+        <div class="col-md-4">
             <div class="card">
-                <div class="card-body text-center p-4">
-                    <div class="mb-4">
-                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" 
-                             style="width: 100px; height: 100px;">
-                            <i class="fas fa-user fa-3x text-primary"></i>
-                        </div>
-                    </div>
-                    <h4 class="fw-bold mb-1">{{ current_user.full_name }}</h4>
-                    <p class="text-muted mb-3">{{ current_user.position }}</p>
-                    <div class="d-flex justify-content-center gap-2">
-                        <span class="badge bg-primary">
-                            <i class="fas fa-user-shield me-1"></i>{{ current_user.role }}
-                        </span>
-                        <span class="badge bg-success">
-                            <i class="fas fa-check-circle me-1"></i>Đã xác thực
-                        </span>
-                    </div>
+                <div class="card-header">
+                    <h4>Thông tin cá nhân</h4>
+                </div>
+                <div class="card-body text-center">
+                    <img src="{{ current_user.avatar_url or url_for('static', filename='img/default-avatar.png') }}" 
+                         class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    <h5 class="card-title">{{ current_user.full_name }}</h5>
+                    <p class="card-text text-muted">{{ current_user.position or 'Chưa cập nhật' }}</p>
+                    <p class="card-text text-muted">{{ current_user.department or 'Chưa cập nhật' }}</p>
+                    <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Chỉnh sửa thông tin
+                    </a>
                 </div>
             </div>
         </div>
 
         <!-- Chi tiết thông tin -->
-        <div class="col-lg-8">
-            <div class="card mb-4">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0">
-                        <i class="fas fa-info-circle me-2"></i>Thông tin chi tiết
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-sm-4">
-                            <p class="mb-0 text-muted">Tên đăng nhập</p>
-                        </div>
-                        <div class="col-sm-8">
-                            <p class="mb-0">{{ current_user.username }}</p>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row mb-3">
-                        <div class="col-sm-4">
-                            <p class="mb-0 text-muted">Email</p>
-                        </div>
-                        <div class="col-sm-8">
-                            <p class="mb-0">{{ current_user.email }}</p>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row mb-3">
-                        <div class="col-sm-4">
-                            <p class="mb-0 text-muted">Phòng ban</p>
-                        </div>
-                        <div class="col-sm-8">
-                            <p class="mb-0">{{ current_user.department or 'Chưa cập nhật' }}</p>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row mb-3">
-                        <div class="col-sm-4">
-                            <p class="mb-0 text-muted">Ngày tạo tài khoản</p>
-                        </div>
-                        <div class="col-sm-8">
-                            <p class="mb-0">{{ current_user.created_at.strftime('%d/%m/%Y') }}</p>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row">
-                        <div class="col-sm-4">
-                            <p class="mb-0 text-muted">Đăng nhập lần cuối</p>
-                        </div>
-                        <div class="col-sm-8">
-                            <p class="mb-0">
-                                {% if current_user.last_login %}
-                                    {{ current_user.last_login.strftime('%d/%m/%Y %H:%M') }}
-                                {% else %}
-                                    Chưa có thông tin
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cài đặt bảo mật -->
+        <div class="col-md-8">
             <div class="card">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0">
-                        <i class="fas fa-shield-alt me-2"></i>Bảo mật
-                    </h5>
+                <div class="card-header">
+                    <h4>Chi tiết tài khoản</h4>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-4">
-                        <div>
-                            <h6 class="mb-1">Xác thực hai lớp (2FA)</h6>
-                            <p class="text-muted mb-0">
-                                {% if current_user.otp_enabled %}
-                                    Đã bật
-                                {% else %}
-                                    Chưa bật
-                                {% endif %}
-                            </p>
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Tên đăng nhập</h6>
                         </div>
-                        <a href="{{ url_for('auth.setup_2fa') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-cog me-2"></i>Cài đặt
-                        </a>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.username }}
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <h6 class="mb-1">Mật khẩu</h6>
-                            <p class="text-muted mb-0">Thay đổi mật khẩu đăng nhập</p>
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Email</h6>
                         </div>
-                        <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-key me-2"></i>Đổi mật khẩu
-                        </a>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.email }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Số điện thoại</h6>
+                        </div>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.phone or 'Chưa cập nhật' }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Địa chỉ</h6>
+                        </div>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.address or 'Chưa cập nhật' }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Ngày tạo</h6>
+                        </div>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.created_at.strftime('%d/%m/%Y') }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Đăng nhập cuối</h6>
+                        </div>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.last_login.strftime('%d/%m/%Y %H:%M') if current_user.last_login }}
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <a href="{{ url_for('auth.change_password') }}" class="btn btn-info">
+                                <i class="fas fa-key"></i> Đổi mật khẩu
+                            </a>
+                            <a href="{{ url_for('auth.activity_log') }}" class="btn btn-secondary">
+                                <i class="fas fa-history"></i> Lịch sử hoạt động
+                            </a>
+                            {% if not current_user.otp_enabled %}
+                            <a href="{{ url_for('auth.setup_2fa') }}" class="btn btn-warning">
+                                <i class="fas fa-shield-alt"></i> Bật xác thực 2 lớp
+                            </a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

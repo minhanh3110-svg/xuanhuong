@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Thông Báo</h2>
+    
+    {% if notifications.items %}
+        <div class="list-group">
+            {% for notif in notifications.items %}
+                <div class="list-group-item {% if not notif.read %}list-group-item-light{% endif %}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">
+                            {% if notif.type == 'alert' %}
+                                <i class="fas fa-exclamation-triangle text-danger"></i>
+                            {% elif notif.type == 'warning' %}
+                                <i class="fas fa-exclamation-circle text-warning"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle text-info"></i>
+                            {% endif %}
+                            {{ notif.title }}
+                        </h5>
+                        <small>{{ notif.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                    </div>
+                    <p class="mb-1">{{ notif.message }}</p>
+                    {% if not notif.read %}
+                        <div class="text-end">
+                            <a href="{{ url_for('mark_notification_read', notif_id=notif.id) }}" 
+                               class="btn btn-sm btn-outline-secondary">
+                                Đánh dấu đã đọc
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Phân trang -->
+        {% if notifications.pages > 1 %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if notifications.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('notifications', page=notifications.prev_num) }}">
+                            &laquo; Trước
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for page in notifications.iter_pages() %}
+                    {% if page %}
+                        <li class="page-item {% if page == notifications.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('notifications', page=page) }}">{{ page }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if notifications.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('notifications', page=notifications.next_num) }}">
+                            Sau &raquo;
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info">
+            Không có thông báo nào.
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

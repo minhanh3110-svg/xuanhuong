@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Đăng Nhập{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h3 class="mb-4 text-center">Đăng Nhập</h3>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Tài khoản</label>
+                        <input type="text" class="form-control" id="username" name="username" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Mật khẩu</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Đăng Nhập</button>
+                    </div>
+                </form>
+                <p class="mt-3 text-muted small text-center">Tài khoản mặc định: <b>admin / 123456</b></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Cập nhật phòng - {{ phong.ten }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Cập nhật thông tin phòng</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('phong.cap_nhat_phong', id=phong.id) }}">
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Tên phòng <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="ten" 
+                                   value="{{ phong.ten }}" required>
+                            <div class="form-text">Nhập tên phòng để dễ dàng phân biệt</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Mô tả</label>
+                            <textarea class="form-control" name="mo_ta" rows="3">{{ phong.mo_ta }}</textarea>
+                            <div class="form-text">Mô tả chi tiết về phòng nuôi cấy</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Trạng thái</label>
+                            <select class="form-select" name="trang_thai">
+                                <option value="Hoạt động" 
+                                        {% if phong.trang_thai == 'Hoạt động' %}selected{% endif %}>
+                                    Hoạt động
+                                </option>
+                                <option value="Bảo trì" 
+                                        {% if phong.trang_thai == 'Bảo trì' %}selected{% endif %}>
+                                    Bảo trì
+                                </option>
+                                <option value="Tạm ngưng" 
+                                        {% if phong.trang_thai == 'Tạm ngưng' %}selected{% endif %}>
+                                    Tạm ngưng
+                                </option>
+                            </select>
+                            <div class="form-text">Trạng thái hoạt động của phòng</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nhiệt độ (°C)</label>
+                                <input type="number" class="form-control" name="nhiet_do" 
+                                       value="{{ phong.nhiet_do }}"
+                                       min="-50" max="100" step="0.1">
+                                <div class="form-text">Nhiệt độ phòng (-50°C đến 100°C)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Độ ẩm (%)</label>
+                                <input type="number" class="form-control" name="do_am" 
+                                       value="{{ phong.do_am }}"
+                                       min="0" max="100" step="0.1">
+                                <div class="form-text">Độ ẩm không khí (0% đến 100%)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Ánh sáng (lux)</label>
+                                <input type="number" class="form-control" name="anh_sang" 
+                                       value="{{ phong.anh_sang }}"
+                                       min="0" max="100000" step="1">
+                                <div class="form-text">Cường độ ánh sáng (0 đến 100,000 lux)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">CO2 (ppm)</label>
+                                <input type="number" class="form-control" name="co2" 
+                                       value="{{ phong.co2 }}"
+                                       min="0" max="5000" step="1">
+                                <div class="form-text">Nồng độ CO2 (0 đến 5,000 ppm)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Lưu thay đổi
+                            </button>
+                            <a href="{{ url_for('phong.chi_tiet_phong', id=phong.id) }}" 
+                               class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Hủy
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Thông tin mẫu -->
+            {% if phong.mau_list %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Thông tin mẫu trong phòng</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for mau in phong.mau_list %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ mau.ten }}</h6>
+                                    <small class="text-muted">
+                                        Tuổi mẫu: {{ mau.tuoi }} ngày
+                                    </small>
+                                </div>
+                                <span class="badge bg-{{ mau.trang_thai | status_color }}">
+                                    {{ mau.trang_thai }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Không thể thay đổi trạng thái phòng sang "Tạm ngưng" khi có mẫu đang phát triển
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// Kiểm tra giá trị nhập vào
+document.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener('change', function(e) {
+        const min = parseFloat(this.min);
+        const max = parseFloat(this.max);
+        const value = parseFloat(this.value);
+        
+        if (value < min) {
+            this.value = min;
+            alert(`Giá trị không được nhỏ hơn ${min}`);
+        } else if (value > max) {
+            this.value = max;
+            alert(`Giá trị không được lớn hơn ${max}`);
+        }
+    });
+});
+
+// Kiểm tra trạng thái phòng
+document.querySelector('select[name="trang_thai"]').addEventListener('change', function(e) {
+    const newStatus = e.target.value;
+    const hasSamples = {{ phong.mau_list|length > 0 }};
+    
+    if (newStatus === 'Tạm ngưng' && hasSamples) {
+        alert('Không thể thay đổi trạng thái phòng sang "Tạm ngưng" khi có mẫu đang phát triển');
+        e.target.value = '{{ phong.trang_thai }}';
+    } else if (newStatus === 'Bảo trì' && hasSamples) {
+        if (!confirm('Chuyển phòng sang trạng thái bảo trì có thể ảnh hưởng đến các mẫu. Bạn có chắc chắn?')) {
+            e.target.value = '{{ phong.trang_thai }}';
+        }
+    }
+});
+
+// Xác nhận trước khi hủy
+document.querySelector('a.btn-outline-secondary').addEventListener('click', function(e) {
+    const form = document.querySelector('form');
+    if (form.ten.value !== '{{ phong.ten }}' || 
+        form.mo_ta.value !== '{{ phong.mo_ta }}' || 
+        form.trang_thai.value !== '{{ phong.trang_thai }}' ||
+        form.nhiet_do.value !== '{{ phong.nhiet_do }}' ||
+        form.do_am.value !== '{{ phong.do_am }}' ||
+        form.anh_sang.value !== '{{ phong.anh_sang }}' ||
+        form.co2.value !== '{{ phong.co2 }}') {
+        if (!confirm('Bạn có chắc chắn muốn hủy? Mọi thay đổi sẽ không được lưu.')) {
+            e.preventDefault();
+        }
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

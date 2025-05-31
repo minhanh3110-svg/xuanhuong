@@ -498,12 +498,7 @@ def inject_notifications():
 
 # Register blueprints
 from auth import auth as auth_blueprint
-app.register_blueprint(auth_blueprint)
-
-@auth_blueprint.route('/login', methods=['GET', 'POST'])
-def login():
-    # ... xử lý logic đăng nhập ...
-    return render_template('auth/login.html')
+app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
 if __name__ == '__main__':
     with app.app_context():

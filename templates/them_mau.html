@@ -1,55 +1,56 @@
 {% extends "base.html" %}
 
-{% block title %}Thêm Mẫu Mới{% endblock %}
+{% block title %}Thêm mẫu mới{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Thêm Mẫu Nuôi Cấy Mới</h1>
-
 <div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Thêm mẫu mới</h5>
+    </div>
     <div class="card-body">
         <form method="POST">
-            <div class="mb-3">
-                <label for="ma_mau" class="form-label">Mã mẫu</label>
-                <input type="text" class="form-control" id="ma_mau" name="ma_mau" required>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="ma_mau" class="form-label">Mã mẫu</label>
+                    <input type="text" class="form-control" id="ma_mau" name="ma_mau" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="ten_mau" class="form-label">Tên mẫu</label>
+                    <input type="text" class="form-control" id="ten_mau" name="ten_mau" required>
+                </div>
             </div>
-
-            <div class="mb-3">
-                <label for="ten_mau" class="form-label">Tên mẫu</label>
-                <input type="text" class="form-control" id="ten_mau" name="ten_mau" required>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="ngay_cay" class="form-label">Ngày cấy</label>
+                    <input type="date" class="form-control" id="ngay_cay" name="ngay_cay" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="trang_thai" class="form-label">Trạng thái</label>
+                    <select class="form-select" id="trang_thai" name="trang_thai" required>
+                        <option value="Mới tạo">Mới tạo</option>
+                        <option value="Đang phát triển">Đang phát triển</option>
+                        <option value="Đã hoàn thành">Đã hoàn thành</option>
+                        <option value="Thất bại">Thất bại</option>
+                    </select>
+                </div>
             </div>
-
             <div class="mb-3">
-                <label for="loai_cay" class="form-label">Loại cây</label>
-                <input type="text" class="form-control" id="loai_cay" name="loai_cay">
-            </div>
-
-            <div class="mb-3">
-                <label for="phong_id" class="form-label">Phòng nuôi cấy</label>
+                <label for="phong_id" class="form-label">Phòng</label>
                 <select class="form-select" id="phong_id" name="phong_id" required>
-                    <option value="">-- Chọn phòng --</option>
+                    <option value="">Chọn phòng</option>
                     {% for phong in phong_list %}
-                    <option value="{{ phong.id }}">{{ phong.ten }} ({{ phong.trang_thai or 'N/A' }})</option>
+                    <option value="{{ phong.id }}">{{ phong.ten_phong }}</option>
                     {% endfor %}
                 </select>
             </div>
-
             <div class="mb-3">
                 <label for="mo_ta" class="form-label">Mô tả</label>
                 <textarea class="form-control" id="mo_ta" name="mo_ta" rows="3"></textarea>
             </div>
-
-            <div class="mb-3">
-                <label for="trang_thai" class="form-label">Trạng thái</label>
-                <select class="form-select" id="trang_thai" name="trang_thai" required>
-                    <option value="Mới tạo">Mới tạo</option>
-                    <option value="Đang phát triển">Đang phát triển</option>
-                    <option value="Đã hoàn thành">Đã hoàn thành</option>
-                    <option value="Thất bại">Thất bại</option>
-                </select>
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Quay lại</a>
+                <button type="submit" class="btn btn-primary">Thêm mẫu</button>
             </div>
-
-            <button type="submit" class="btn btn-primary">Thêm mẫu</button>
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">Hủy</a>
         </form>
     </div>
 </div>

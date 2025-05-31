@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from app import db, User, mail, UserActivity
 from flask_mail import Message
@@ -99,29 +99,39 @@ def confirm_email(token):
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
-
+        
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        remember = request.form.get('remember', False)
+        remember = True if request.form.get('remember') else False
         
         user = User.query.filter_by(username=username).first()
         
-        if user and user.check_password(password):
-            if not user.is_active:
-                flash('Vui lòng xác nhận email trước khi đăng nhập', 'warning')
-                return redirect(url_for('auth.login'))
-                
-            login_user(user, remember=remember)
-            user.last_login = datetime.utcnow()
-            db.session.commit()
+        if not user or not user.check_password(password):
+            flash('Tên đăng nhập hoặc mật khẩu không chính xác', 'danger')
+            return redirect(url_for('auth.login'))
             
-            user.log_activity('login')
-            next_page = request.args.get('next')
-            return redirect(next_page or url_for('index'))
+        if not user.is_active:
+            flash('Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email.', 'warning')
+            return redirect(url_for('auth.login'))
             
-        flash('Sai tên đăng nhập hoặc mật khẩu', 'error')
-    
+        # Kiểm tra xác thực 2 lớp nếu được bật
+        if user.otp_enabled:
+            otp_code = request.form.get('otp_code')
+            if not otp_code or not user.verify_otp(otp_code):
+                flash('Mã xác thực không chính xác', 'danger')
+                return render_template('auth/login.html', show_otp=True)
+        
+        login_user(user, remember=remember)
+        user.last_login = db.func.now()
+        user.log_activity('login')
+        db.session.commit()
+        
+        next_page = request.args.get('next')
+        if next_page:
+            return redirect(next_page)
+        return redirect(url_for('index'))
+        
     return render_template('auth/login.html')
 
 @auth.route('/logout')
@@ -129,7 +139,7 @@ def login():
 def logout():
     current_user.log_activity('logout')
     logout_user()
-    flash('Đăng xuất thành công', 'success')
+    flash('Đã đăng xuất thành công', 'success')
     return redirect(url_for('auth.login'))
 
 @auth.route('/profile')
@@ -200,21 +210,26 @@ def forgot_password():
         
         if user:
             token = user.generate_reset_token()
-            reset_url = url_for('auth.reset_password', token=token, _external=True)
+            # Gửi email với link reset password
+            send_reset_password_email(user, token)
+            flash('Hướng dẫn đặt lại mật khẩu đã được gửi đến email của bạn', 'info')
+        else:
+            flash('Không tìm thấy tài khoản với email này', 'danger')
             
-            msg = Message('Khôi phục mật khẩu',
-                        recipients=[user.email])
-            msg.html = render_template('email/reset_password.html',
-                                     user=user,
-                                     reset_url=reset_url)
-            mail.send(msg)
-            
-            flash('Hướng dẫn khôi phục mật khẩu đã được gửi đến email của bạn', 'success')
-            return redirect(url_for('auth.login'))
-            
-        flash('Không tìm thấy tài khoản với email này', 'error')
+        return redirect(url_for('auth.login'))
         
     return render_template('auth/forgot_password.html')
+
+def send_reset_password_email(user, token):
+    reset_url = url_for('auth.reset_password', token=token, _external=True)
+    msg = Message('Đặt lại mật khẩu',
+                  recipients=[user.email])
+    msg.body = f'''Để đặt lại mật khẩu, vui lòng truy cập link sau:
+{reset_url}
+
+Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.
+'''
+    mail.send(msg)
 
 @auth.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):

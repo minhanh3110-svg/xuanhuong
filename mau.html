@@ -1,77 +1,260 @@
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask_login import login_required, current_user
+from app.models.mau import Mau, NhatKy, HinhAnh
+from app.models.phong import Phong
 from app import db
 from datetime import datetime
+from werkzeug.utils import secure_filename
+import os
+from PIL import Image
+import uuid
 
-class Mau(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    ma_mau = db.Column(db.String(50), unique=True, nullable=False)
-    ten = db.Column(db.String(100), nullable=False)
-    mo_ta = db.Column(db.Text)
-    ngay_cay = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    trang_thai = db.Column(db.String(50), default='Mới tạo')
+bp = Blueprint('mau', __name__)
+
+def save_image(file):
+    """Lưu và xử lý hình ảnh"""
+    filename = secure_filename(file.filename)
+    # Tạo tên file ngẫu nhiên để tránh trùng lặp
+    unique_filename = f"{uuid.uuid4().hex}_{filename}"
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
     
-    # Foreign keys
-    phong_id = db.Column(db.Integer, db.ForeignKey('phong.id'), nullable=False)
-    nguoi_tao_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    # Lưu và resize ảnh
+    img = Image.open(file)
+    img.thumbnail((800, 800))  # Giới hạn kích thước tối đa
+    img.save(filepath, quality=85, optimize=True)  # Nén ảnh để giảm dung lượng
     
-    # Relationships
-    nhat_ky = db.relationship('NhatKy', backref='mau', lazy=True, cascade='all, delete-orphan')
-    hinh_anh = db.relationship('HinhAnh', backref='mau', lazy=True, cascade='all, delete-orphan')
-    
-    def __init__(self, **kwargs):
-        super(Mau, self).__init__(**kwargs)
-        if not self.ma_mau:
-            self.ma_mau = self.generate_ma_mau()
-    
-    def generate_ma_mau(self):
-        """Tạo mã mẫu tự động theo định dạng: M{năm}{tháng}{số thứ tự}"""
-        now = datetime.utcnow()
-        prefix = f'M{now.year}{now.month:02d}'
-        
-        # Tìm mã mẫu cuối cùng có cùng prefix
-        last_mau = Mau.query.filter(
-            Mau.ma_mau.like(f'{prefix}%')
-        ).order_by(Mau.ma_mau.desc()).first()
-        
-        if last_mau:
-            last_number = int(last_mau.ma_mau[7:])
-            new_number = last_number + 1
-        else:
-            new_number = 1
-            
-        return f'{prefix}{new_number:04d}'
-    
-    @property
-    def tuoi(self):
-        """Tính tuổi của mẫu (số ngày từ khi cấy)"""
-        return (datetime.utcnow() - self.ngay_cay).days
-    
-    @property
-    def nhat_ky_moi_nhat(self):
-        """Lấy nhật ký mới nhất"""
-        return self.nhat_ky.order_by(NhatKy.ngay_ghi.desc()).first()
-    
-    def cap_nhat_trang_thai(self, trang_thai_moi, ghi_chu=None):
-        """Cập nhật trạng thái và tạo nhật ký"""
-        self.trang_thai = trang_thai_moi
-        if ghi_chu:
-            nhat_ky = NhatKy(
-                mau_id=self.id,
-                noi_dung=f'Cập nhật trạng thái: {trang_thai_moi}\nGhi chú: {ghi_chu}'
+    return url_for('static', filename=f'uploads/{unique_filename}')
+
+@bp.route('/them-mau-moi', methods=['GET', 'POST'])
+@login_required
+def them_mau_moi():
+    if request.method == 'POST':
+        try:
+            # Tạo mẫu mới
+            mau = Mau(
+                ten=request.form.get('ten'),
+                mo_ta=request.form.get('mo_ta'),
+                phong_id=request.form.get('phong_id'),
+                nguoi_tao_id=current_user.id,
+                trang_thai=request.form.get('trang_thai', 'Mới tạo')
             )
-            db.session.add(nhat_ky)
+            
+            if request.form.get('ngay_cay'):
+                mau.ngay_cay = datetime.strptime(request.form.get('ngay_cay'), '%Y-%m-%d')
+            
+            db.session.add(mau)
+            db.session.flush()  # Để lấy ID của mẫu
+            
+            # Lưu nhật ký đầu tiên
+            if request.form.get('ghi_chu'):
+                nhat_ky = NhatKy(
+                    mau_id=mau.id,
+                    noi_dung=request.form.get('ghi_chu'),
+                    nguoi_ghi_id=current_user.id
+                )
+                db.session.add(nhat_ky)
+            
+            # Xử lý hình ảnh
+            if 'hinh_anh' in request.files:
+                files = request.files.getlist('hinh_anh')
+                for file in files:
+                    if file and allowed_file(file.filename):
+                        url = save_image(file)
+                        hinh_anh = HinhAnh(
+                            mau_id=mau.id,
+                            url=url,
+                            mo_ta=request.form.get('mo_ta'),
+                            nguoi_chup_id=current_user.id
+                        )
+                        db.session.add(hinh_anh)
+            
+            db.session.commit()
+            flash('Thêm mẫu mới thành công!', 'success')
+            return redirect(url_for('mau.chi_tiet_mau', id=mau.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+            return redirect(url_for('mau.them_mau_moi'))
+    
+    phong_list = Phong.query.all()
+    return render_template('mau/them_mau.html', 
+                         phong_list=phong_list,
+                         today=datetime.now().strftime('%Y-%m-%d'))
+
+@bp.route('/chi-tiet-mau/<int:id>')
+@login_required
+def chi_tiet_mau(id):
+    mau = Mau.query.get_or_404(id)
+    return render_template('mau/chi_tiet_mau.html', mau=mau)
+
+@bp.route('/cap-nhat-mau/<int:id>', methods=['GET', 'POST'])
+@login_required
+def cap_nhat_mau(id):
+    mau = Mau.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            # Cập nhật thông tin mẫu
+            mau.ten = request.form.get('ten')
+            mau.mo_ta = request.form.get('mo_ta')
+            mau.phong_id = request.form.get('phong_id')
+            
+            # Kiểm tra nếu trạng thái thay đổi
+            trang_thai_moi = request.form.get('trang_thai')
+            if trang_thai_moi != mau.trang_thai:
+                mau.cap_nhat_trang_thai(trang_thai_moi, request.form.get('ghi_chu'))
+            
+            # Thêm nhật ký nếu có ghi chú
+            elif request.form.get('ghi_chu'):
+                nhat_ky = NhatKy(
+                    mau_id=mau.id,
+                    noi_dung=request.form.get('ghi_chu'),
+                    nguoi_ghi_id=current_user.id
+                )
+                db.session.add(nhat_ky)
+            
+            db.session.commit()
+            flash('Cập nhật mẫu thành công!', 'success')
+            return redirect(url_for('mau.chi_tiet_mau', id=mau.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+    
+    phong_list = Phong.query.all()
+    return render_template('mau/cap_nhat_mau.html', mau=mau, phong_list=phong_list)
+
+@bp.route('/them-nhat-ky/<int:mau_id>', methods=['POST'])
+@login_required
+def them_nhat_ky(mau_id):
+    mau = Mau.query.get_or_404(mau_id)
+    
+    try:
+        nhat_ky = NhatKy(
+            mau_id=mau_id,
+            noi_dung=request.form.get('noi_dung'),
+            nguoi_ghi_id=current_user.id
+        )
+        db.session.add(nhat_ky)
         db.session.commit()
+        flash('Thêm nhật ký thành công!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+    
+    return redirect(url_for('mau.chi_tiet_mau', id=mau_id))
 
-class NhatKy(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    mau_id = db.Column(db.Integer, db.ForeignKey('mau.id'), nullable=False)
-    ngay_ghi = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    noi_dung = db.Column(db.Text, nullable=False)
-    nguoi_ghi_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+@bp.route('/them-hinh-anh/<int:mau_id>', methods=['POST'])
+@login_required
+def them_hinh_anh(mau_id):
+    mau = Mau.query.get_or_404(mau_id)
+    
+    try:
+        if 'hinh_anh' in request.files:
+            files = request.files.getlist('hinh_anh')
+            for file in files:
+                if file and allowed_file(file.filename):
+                    url = save_image(file)
+                    hinh_anh = HinhAnh(
+                        mau_id=mau_id,
+                        url=url,
+                        mo_ta=request.form.get('mo_ta'),
+                        nguoi_chup_id=current_user.id
+                    )
+                    db.session.add(hinh_anh)
+            
+            db.session.commit()
+            flash('Thêm hình ảnh thành công!', 'success')
+        else:
+            flash('Vui lòng chọn ít nhất một hình ảnh', 'error')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+    
+    return redirect(url_for('mau.chi_tiet_mau', id=mau_id))
 
-class HinhAnh(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    mau_id = db.Column(db.Integer, db.ForeignKey('mau.id'), nullable=False)
-    url = db.Column(db.String(200), nullable=False)
-    mo_ta = db.Column(db.String(200))
-    ngay_chup = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    nguoi_chup_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+@bp.route('/xoa-mau/<int:id>')
+@login_required
+def xoa_mau(id):
+    if current_user.role != 'admin':
+        flash('Bạn không có quyền xóa mẫu!', 'error')
+        return redirect(url_for('index'))
+    
+    mau = Mau.query.get_or_404(id)
+    try:
+        # Xóa các file hình ảnh
+        for hinh in mau.hinh_anh:
+            try:
+                os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], 
+                                     hinh.url.split('/')[-1]))
+            except:
+                pass  # Bỏ qua nếu file không tồn tại
+        
+        db.session.delete(mau)
+        db.session.commit()
+        flash('Xóa mẫu thành công!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+    
+    return redirect(url_for('index'))
+
+@bp.route('/api/generate-ma-mau')
+@login_required
+def generate_ma_mau():
+    """API để tạo mã mẫu tự động"""
+    mau = Mau()
+    return jsonify({'ma_mau': mau.generate_ma_mau()})
+
+@bp.route('/api/xoa-hinh-anh/<int:id>', methods=['DELETE'])
+@login_required
+def xoa_hinh_anh(id):
+    """API để xóa hình ảnh"""
+    hinh_anh = HinhAnh.query.get_or_404(id)
+    
+    # Kiểm tra quyền
+    mau = Mau.query.get(hinh_anh.mau_id)
+    if current_user.id != mau.nguoi_tao_id and current_user.role != 'admin':
+        return jsonify({'error': 'Không có quyền xóa'}), 403
+    
+    try:
+        # Xóa file
+        try:
+            os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], 
+                                 hinh_anh.url.split('/')[-1]))
+        except:
+            pass  # Bỏ qua nếu file không tồn tại
+        
+        db.session.delete(hinh_anh)
+        db.session.commit()
+        return jsonify({'message': 'Xóa hình ảnh thành công'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/cap-nhat-mo-ta-anh/<int:id>', methods=['POST'])
+@login_required
+def cap_nhat_mo_ta_anh(id):
+    """API để cập nhật mô tả hình ảnh"""
+    hinh_anh = HinhAnh.query.get_or_404(id)
+    
+    # Kiểm tra quyền
+    mau = Mau.query.get(hinh_anh.mau_id)
+    if current_user.id != mau.nguoi_tao_id and current_user.role != 'admin':
+        return jsonify({'error': 'Không có quyền cập nhật'}), 403
+    
+    try:
+        data = request.get_json()
+        hinh_anh.mo_ta = data.get('mo_ta')
+        db.session.commit()
+        return jsonify({'message': 'Cập nhật mô tả thành công'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+def allowed_file(filename):
+    """Kiểm tra phần mở rộng của file có được phép không"""
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

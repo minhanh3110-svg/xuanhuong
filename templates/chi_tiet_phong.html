@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}{{ phong.ten }} - Chi tiết phòng{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Thông tin chính -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ phong.ten }}</h4>
+                    <div>
+                        <a href="{{ url_for('phong.cap_nhat_phong', id=phong.id) }}" 
+                           class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit me-2"></i>Chỉnh sửa
+                        </a>
+                        {% if current_user.role == 'admin' and not phong.mau_list %}
+                        <button type="button" class="btn btn-danger btn-sm" 
+                                onclick="confirmDelete({{ phong.id }})">
+                            <i class="fas fa-trash me-2"></i>Xóa
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th class="ps-0">Trạng thái:</th>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if phong.trang_thai == 'Hoạt động' else 'danger' }}">
+                                            {{ phong.trang_thai }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-0">Số mẫu hiện tại:</th>
+                                    <td>{{ phong.mau_list|length }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-0">Mẫu cần chăm sóc:</th>
+                                    <td>{{ phong.mau_list|selectattr('trang_thai', 'equalto', 'Cần chăm sóc')|list|length }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th class="ps-0">Cập nhật lần cuối:</th>
+                                    <td>{{ phong.last_update.strftime('%H:%M:%S %d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-0">Người cập nhật:</th>
+                                    <td>{{ phong.nguoi_cap_nhat.full_name }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>Mô tả:</h6>
+                        <p class="mb-0">{{ phong.mo_ta or 'Chưa có mô tả' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Biểu đồ môi trường -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Biểu đồ môi trường</h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm active" 
+                                onclick="updateChart(1)">24h</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                onclick="updateChart(7)">7 ngày</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                onclick="updateChart(30)">30 ngày</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="environmentChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Thông số hiện tại -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Thông số hiện tại</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Nhiệt độ -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <i class="fas fa-temperature-high text-primary me-2"></i>
+                                <span>Nhiệt độ</span>
+                            </div>
+                            <span class="badge bg-{{ 'success' if 20 <= phong.nhiet_do <= 30 else 'warning' }}">
+                                {{ phong.nhiet_do }}°C
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            <div class="progress-bar {{ 'bg-success' if 20 <= phong.nhiet_do <= 30 else 'bg-warning' }}" 
+                                 role="progressbar" style="width: {{ (phong.nhiet_do/40)*100 }}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mt-1">
+                            <span>0°C</span>
+                            <span>20°C</span>
+                            <span>40°C</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Độ ẩm -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <i class="fas fa-tint text-info me-2"></i>
+                                <span>Độ ẩm</span>
+                            </div>
+                            <span class="badge bg-{{ 'success' if 60 <= phong.do_am <= 80 else 'warning' }}">
+                                {{ phong.do_am }}%
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            <div class="progress-bar {{ 'bg-success' if 60 <= phong.do_am <= 80 else 'bg-warning' }}" 
+                                 role="progressbar" style="width: {{ phong.do_am }}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mt-1">
+                            <span>0%</span>
+                            <span>50%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Ánh sáng -->
+                    {% if phong.anh_sang %}
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <i class="fas fa-sun text-warning me-2"></i>
+                                <span>Ánh sáng</span>
+                            </div>
+                            <span class="badge bg-{{ 'success' if 1000 <= phong.anh_sang <= 10000 else 'warning' }}">
+                                {{ phong.anh_sang }} lux
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            <div class="progress-bar {{ 'bg-success' if 1000 <= phong.anh_sang <= 10000 else 'bg-warning' }}" 
+                                 role="progressbar" style="width: {{ (phong.anh_sang/10000)*100 }}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mt-1">
+                            <span>0 lux</span>
+                            <span>5000 lux</span>
+                            <span>10000 lux</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- CO2 -->
+                    {% if phong.co2 %}
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <i class="fas fa-wind text-success me-2"></i>
+                                <span>CO2</span>
+                            </div>
+                            <span class="badge bg-{{ 'success' if 350 <= phong.co2 <= 1000 else 'warning' }}">
+                                {{ phong.co2 }} ppm
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            <div class="progress-bar {{ 'bg-success' if 350 <= phong.co2 <= 1000 else 'bg-warning' }}" 
+                                 role="progressbar" style="width: {{ (phong.co2/1000)*100 }}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mt-1">
+                            <span>0 ppm</span>
+                            <span>500 ppm</span>
+                            <span>1000 ppm</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Danh sách mẫu -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Danh sách mẫu</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for mau in phong.mau_list %}
+                        <a href="{{ url_for('mau.chi_tiet_mau', id=mau.id) }}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ mau.ten }}</h6>
+                                    <small class="text-muted">
+                                        Tuổi mẫu: {{ mau.tuoi }} ngày
+                                    </small>
+                                </div>
+                                <span class="badge bg-{{ mau.trang_thai | status_color }}">
+                                    {{ mau.trang_thai }}
+                                </span>
+                            </div>
+                        </a>
+                        {% else %}
+                        <div class="text-center text-muted p-3">
+                            <p class="mb-0">Chưa có mẫu nào trong phòng</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Khởi tạo biểu đồ
+const ctx = document.getElementById('environmentChart').getContext('2d');
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ chart_data.labels|tojson }},
+        datasets: [
+            {
+                label: 'Nhiệt độ (°C)',
+                data: {{ chart_data.nhiet_do|tojson }},
+                borderColor: '#0d6efd',
+                backgroundColor: '#0d6efd20',
+                fill: true
+            },
+            {
+                label: 'Độ ẩm (%)',
+                data: {{ chart_data.do_am|tojson }},
+                borderColor: '#0dcaf0',
+                backgroundColor: '#0dcaf020',
+                fill: true
+            }{% if chart_data.anh_sang %},
+            {
+                label: 'Ánh sáng (lux)',
+                data: {{ chart_data.anh_sang|tojson }},
+                borderColor: '#ffc107',
+                backgroundColor: '#ffc10720',
+                fill: true
+            }{% endif %}{% if chart_data.co2 %},
+            {
+                label: 'CO2 (ppm)',
+                data: {{ chart_data.co2|tojson }},
+                borderColor: '#198754',
+                backgroundColor: '#19875420',
+                fill: true
+            }{% endif %}
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: false
+            }
+        },
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Cập nhật biểu đồ
+function updateChart(days) {
+    fetch(`/api/lich-su-moi-truong/{{ phong.id }}?days=${days}`)
+        .then(response => response.json())
+        .then(data => {
+            // Cập nhật dữ liệu
+            chart.data.labels = data.map(d => {
+                const date = new Date(d.thoi_gian);
+                return days === 1 ? 
+                    date.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}) :
+                    date.toLocaleDateString('vi-VN');
+            });
+            
+            chart.data.datasets[0].data = data.map(d => d.nhiet_do);
+            chart.data.datasets[1].data = data.map(d => d.do_am);
+            
+            if (data[0].anh_sang !== null) {
+                chart.data.datasets[2].data = data.map(d => d.anh_sang);
+            }
+            if (data[0].co2 !== null) {
+                chart.data.datasets[3].data = data.map(d => d.co2);
+            }
+            
+            chart.update();
+            
+            // Cập nhật active button
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        });
+}
+
+// Cập nhật dữ liệu real-time
+function updateRoomData() {
+    fetch(`/api/cap-nhat-moi-truong/{{ phong.id }}`)
+        .then(response => response.json())
+        .then(data => {
+            // Cập nhật các giá trị hiện tại
+            document.querySelector('.temp-value').textContent = `${data.nhiet_do}°C`;
+            document.querySelector('.humidity-value').textContent = `${data.do_am}%`;
+            if (data.anh_sang) {
+                document.querySelector('.light-value').textContent = `${data.anh_sang} lux`;
+            }
+            if (data.co2) {
+                document.querySelector('.co2-value').textContent = `${data.co2} ppm`;
+            }
+            document.querySelector('.last-update').textContent = data.last_update;
+            
+            // Cập nhật biểu đồ
+            updateChart(1);
+        });
+}
+
+// Cập nhật mỗi 5 phút
+setInterval(updateRoomData, 300000);
+
+// Xác nhận xóa phòng
+function confirmDelete(roomId) {
+    if (confirm('Bạn có chắc chắn muốn xóa phòng này? Hành động này không thể hoàn tác.')) {
+        window.location.href = `/xoa-phong/${roomId}`;
+    }
+}
+</script>
+{% endblock %}
+{% endblock %}

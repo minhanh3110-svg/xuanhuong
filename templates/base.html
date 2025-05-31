@@ -12,9 +12,30 @@
     
     <style>
         :root {
-            --primary-color: #2563eb;
-            --secondary-color: #1e40af;
-            --light-bg: #f3f4f6;
+            --primary-color: #10b981;
+            --primary-dark: #059669;
+            --secondary-color: #047857;
+            --accent-color: #34d399;
+            --light-bg: #f0fdf4;
+            --text-primary: #064e3b;
+            --text-secondary: #065f46;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-10px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.95); }
+            to { transform: scale(1); }
         }
 
         body {
@@ -23,28 +44,55 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            color: var(--text-primary);
         }
 
         .navbar {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             padding: 1rem 0;
+            animation: fadeIn 0.5s ease-out;
         }
 
         .navbar-brand {
             font-weight: 600;
             font-size: 1.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-brand:hover {
+            transform: translateY(-2px);
         }
 
         .nav-link {
             font-weight: 500;
             padding: 0.5rem 1rem !important;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             transition: all 0.3s ease;
+            margin: 0 0.25rem;
+            position: relative;
+            overflow: hidden;
         }
 
         .nav-link:hover {
-            background-color: rgba(255,255,255,0.1);
+            background-color: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: white;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .nav-link:hover::after {
+            width: 80%;
         }
 
         .navbar-badge {
@@ -55,6 +103,7 @@
             font-size: 0.75rem;
             border-radius: 999px;
             font-weight: 600;
+            animation: scaleIn 0.3s ease;
         }
 
         .notification-icon {
@@ -66,48 +115,80 @@
         }
 
         .notification-icon:hover {
-            background-color: rgba(255,255,255,0.1);
+            background-color: rgba(255,255,255,0.15);
+            transform: scale(1.1);
         }
 
         .dropdown-menu {
             border: none;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            border-radius: 1rem;
+            animation: fadeIn 0.2s ease-out;
+            overflow: hidden;
         }
 
         .dropdown-item {
             padding: 0.75rem 1.25rem;
             font-weight: 500;
             transition: all 0.2s ease;
+            position: relative;
+            z-index: 1;
         }
 
         .dropdown-item:hover {
-            background-color: var(--light-bg);
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateX(5px);
         }
 
         .alert {
             border: none;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease-out;
+            margin-bottom: 1rem;
         }
 
         .card {
             border: none;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            background: white;
+            overflow: hidden;
+            animation: scaleIn 0.3s ease-out;
         }
 
         .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
         }
 
         .btn {
-            padding: 0.5rem 1.25rem;
+            padding: 0.75rem 1.5rem;
             font-weight: 500;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s;
+        }
+
+        .btn:hover::after {
+            width: 200%;
+            height: 200%;
         }
 
         .btn-primary {
@@ -116,28 +197,73 @@
         }
 
         .btn-primary:hover {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .content-wrapper {
+            flex: 1;
+            padding: 2rem 0;
+            animation: fadeIn 0.5s ease-out;
         }
 
         footer {
             background-color: white;
-            box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.1);
             margin-top: auto;
+            padding: 1.5rem 0;
+        }
+
+        .user-avatar {
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            padding: 0.5rem;
+            margin-right: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.1);
+            background: rgba(255,255,255,0.3);
         }
 
         /* Custom container padding for better mobile view */
         @media (max-width: 768px) {
             .container {
-                padding-left: 1.25rem;
-                padding-right: 1.25rem;
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+            
+            .navbar-collapse {
+                background: var(--primary-dark);
+                border-radius: 1rem;
+                padding: 1rem;
+                margin-top: 1rem;
             }
         }
 
-        /* Main content wrapper */
-        .content-wrapper {
-            flex: 1;
-            padding: 2rem 0;
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--light-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
         }
     </style>
 </head>
@@ -145,8 +271,9 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-flask"></i> Quản Lý Nuôi Cấy Mô
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <i class="fas fa-flask me-2"></i>
+                <span>Quản Lý Nuôi Cấy Mô</span>
             </a>
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -157,23 +284,23 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('index') }}">
-                            <i class="fas fa-home"></i> Trang Chủ
+                            <i class="fas fa-home me-2"></i>Trang Chủ
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('them_mau_moi') }}">
-                            <i class="fas fa-plus"></i> Thêm Mẫu
+                            <i class="fas fa-plus me-2"></i>Thêm Mẫu
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('phong_moi_truong') }}">
-                            <i class="fas fa-thermometer-half"></i> Phòng Môi Trường
+                            <i class="fas fa-thermometer-half me-2"></i>Phòng Môi Trường
                         </a>
                     </li>
                 </ul>
                 
                 <ul class="navbar-nav align-items-center">
-                    <li class="nav-item me-2">
+                    <li class="nav-item me-3">
                         <a class="nav-link notification-icon" href="{{ url_for('notifications') }}">
                             <i class="fas fa-bell"></i>
                             {% if unread_notifications > 0 %}
@@ -181,15 +308,15 @@
                             {% endif %}
                         </a>
                     </li>
-                    <li class="nav-item me-2">
+                    <li class="nav-item me-3">
                         <a class="nav-link" href="{{ url_for('setup_2fa') }}">
-                            <i class="fas fa-shield-alt"></i> 2FA
+                            <i class="fas fa-shield-alt"></i>
                         </a>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" 
                            role="button" data-bs-toggle="dropdown">
-                            <div class="bg-white rounded-circle text-primary p-1 me-2">
+                            <div class="user-avatar">
                                 <i class="fas fa-user"></i>
                             </div>
                             <span>{{ current_user.username }}</span>
@@ -198,14 +325,14 @@
                             {% if current_user.role == 'admin' %}
                             <li>
                                 <a class="dropdown-item" href="{{ url_for('create_admin') }}">
-                                    <i class="fas fa-user-shield me-2"></i> Tạo Admin
+                                    <i class="fas fa-user-shield me-2"></i>Tạo Admin
                                 </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
                             <li>
                                 <a class="dropdown-item text-danger" href="{{ url_for('logout') }}">
-                                    <i class="fas fa-sign-out-alt me-2"></i> Đăng Xuất
+                                    <i class="fas fa-sign-out-alt me-2"></i>Đăng Xuất
                                 </a>
                             </li>
                         </ul>
@@ -246,8 +373,21 @@
 
     <!-- Footer -->
     <footer class="py-4">
-        <div class="container text-center">
-            <p class="mb-0 text-muted">&copy; 2024 Hệ Thống Quản Lý Nuôi Cấy Mô. All rights reserved.</p>
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start">
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-leaf me-2"></i>
+                        &copy; 2024 Hệ Thống Quản Lý Nuôi Cấy Mô
+                    </p>
+                </div>
+                <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-code me-2"></i>
+                        Phát triển bởi Nhóm Nghiên Cứu
+                    </p>
+                </div>
+            </div>
         </div>
     </footer>
 

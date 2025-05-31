@@ -436,15 +436,16 @@ def api_thong_ke_nang_suat():
 
 # Initialize database and create admin user
 def init_db():
-    with app.app_context():
-        db.create_all()
-        # Create admin user if not exists
-        admin = User.query.filter_by(username='admin').first()
-        if not admin:
-            admin = User(username='admin', role='admin', name='Administrator')
-            admin.set_password('123456')  # Default password from the website
-            db.session.add(admin)
-            db.session.commit()
+   @app.route('/tao-admin')
+def tao_admin():
+    from your_app_file import db, User  # thay your_app_file bằng tên file nếu khác (bỏ .py)
+    if User.query.filter_by(username='admin').first():
+        return "Admin đã tồn tại"
+    user = User(username='admin', name='Administrator', role='admin')
+    user.set_password('123456')  # đổi mật khẩu tại đây nếu cần
+    db.session.add(user)
+    db.session.commit()
+    return "Đã tạo tài khoản admin với mật khẩu 123456"
 
 if __name__ == '__main__':
     init_db()

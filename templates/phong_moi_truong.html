@@ -1,112 +1,190 @@
 {% extends "base.html" %}
 
-{% block title %}Quản lý phòng môi trường{% endblock %}
+{% block title %}Quản lý phòng môi trường - Quản Lý Cấy Mô{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Danh sách phòng</h5>
-        <a href="{{ url_for('them_phong') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Thêm phòng
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Quản lý phòng môi trường</h4>
+        <a href="{{ url_for('phong.them_phong_moi') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Thêm phòng mới
         </a>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Tên phòng</th>
-                        <th>Nhiệt độ (°C)</th>
-                        <th>Độ ẩm (%)</th>
-                        <th>Ghi chú</th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for phong in phong_list %}
-                    <tr>
-                        <td>{{ phong.ten_phong }}</td>
-                        <td>
-                            <div class="input-group">
-                                <input type="number" class="form-control form-control-sm nhiet-do"
-                                       data-phong-id="{{ phong.id }}" value="{{ phong.nhiet_do or '' }}"
-                                       step="0.1" min="0" max="50">
-                                <span class="input-group-text">°C</span>
+
+    <div class="row g-4">
+        {% for phong in phong_list %}
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ phong.ten }}</h5>
+                    <span class="badge bg-{{ 'success' if phong.trang_thai == 'Hoạt động' else 'danger' }}">
+                        {{ phong.trang_thai }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- Nhiệt độ -->
+                        <div class="col-6">
+                            <div class="p-3 border rounded">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <i class="fas fa-temperature-high text-primary me-2"></i>
+                                        <span>Nhiệt độ</span>
+                                    </div>
+                                    <span class="badge bg-{{ 'success' if 20 <= phong.nhiet_do <= 30 else 'warning' }}">
+                                        {{ phong.nhiet_do }}°C
+                                    </span>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar {{ 'bg-success' if 20 <= phong.nhiet_do <= 30 else 'bg-warning' }}" 
+                                         role="progressbar" style="width: {{ (phong.nhiet_do/40)*100 }}%">
+                                    </div>
+                                </div>
                             </div>
-                        </td>
-                        <td>
-                            <div class="input-group">
-                                <input type="number" class="form-control form-control-sm do-am"
-                                       data-phong-id="{{ phong.id }}" value="{{ phong.do_am or '' }}"
-                                       step="0.1" min="0" max="100">
-                                <span class="input-group-text">%</span>
+                        </div>
+
+                        <!-- Độ ẩm -->
+                        <div class="col-6">
+                            <div class="p-3 border rounded">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <i class="fas fa-tint text-info me-2"></i>
+                                        <span>Độ ẩm</span>
+                                    </div>
+                                    <span class="badge bg-{{ 'success' if 60 <= phong.do_am <= 80 else 'warning' }}">
+                                        {{ phong.do_am }}%
+                                    </span>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar {{ 'bg-success' if 60 <= phong.do_am <= 80 else 'bg-warning' }}" 
+                                         role="progressbar" style="width: {{ phong.do_am }}%">
+                                    </div>
+                                </div>
                             </div>
-                        </td>
-                        <td>{{ phong.ghi_chu or '' }}</td>
-                        <td>
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-success cap-nhat-moi-truong" data-phong-id="{{ phong.id }}">
-                                    <i class="fas fa-sync-alt"></i>
-                                </button>
-                                <a href="{{ url_for('sua_phong', id=phong.id) }}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{{ url_for('xoa_phong', id=phong.id) }}" class="btn btn-sm btn-danger"
-                                   onclick="return confirm('Bạn có chắc chắn muốn xóa phòng này?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
+                        </div>
+
+                        <!-- Ánh sáng -->
+                        {% if phong.anh_sang %}
+                        <div class="col-6">
+                            <div class="p-3 border rounded">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <i class="fas fa-sun text-warning me-2"></i>
+                                        <span>Ánh sáng</span>
+                                    </div>
+                                    <span class="badge bg-{{ 'success' if 1000 <= phong.anh_sang <= 10000 else 'warning' }}">
+                                        {{ phong.anh_sang }} lux
+                                    </span>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar {{ 'bg-success' if 1000 <= phong.anh_sang <= 10000 else 'bg-warning' }}" 
+                                         role="progressbar" style="width: {{ (phong.anh_sang/10000)*100 }}%">
+                                    </div>
+                                </div>
                             </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        </div>
+                        {% endif %}
+
+                        <!-- CO2 -->
+                        {% if phong.co2 %}
+                        <div class="col-6">
+                            <div class="p-3 border rounded">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <i class="fas fa-wind text-success me-2"></i>
+                                        <span>CO2</span>
+                                    </div>
+                                    <span class="badge bg-{{ 'success' if 350 <= phong.co2 <= 1000 else 'warning' }}">
+                                        {{ phong.co2 }} ppm
+                                    </span>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar {{ 'bg-success' if 350 <= phong.co2 <= 1000 else 'bg-warning' }}" 
+                                         role="progressbar" style="width: {{ (phong.co2/1000)*100 }}%">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-3">
+                        <h6>Thông tin mẫu</h6>
+                        <div class="d-flex justify-content-between text-muted small">
+                            <span>Tổng số mẫu: {{ phong.mau_list|length }}</span>
+                            <span>Cần chăm sóc: {{ phong.mau_list|selectattr('trang_thai', 'equalto', 'Cần chăm sóc')|list|length }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 text-muted small">
+                        <i class="fas fa-clock me-1"></i>
+                        Cập nhật lần cuối: {{ phong.last_update.strftime('%H:%M:%S %d/%m/%Y') }}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('phong.chi_tiet_phong', id=phong.id) }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-chart-line me-2"></i>Chi tiết
+                        </a>
+                        <div>
+                            <a href="{{ url_for('phong.cap_nhat_phong', id=phong.id) }}" 
+                               class="btn btn-outline-secondary btn-sm me-2">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if current_user.role == 'admin' and not phong.mau_list %}
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                    onclick="confirmDelete({{ phong.id }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+        {% else %}
+        <div class="col-12">
+            <div class="text-center text-muted">
+                <p class="mb-0">Chưa có phòng nào được tạo</p>
+            </div>
+        </div>
+        {% endfor %}
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
+{% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const updateButtons = document.querySelectorAll('.cap-nhat-moi-truong');
-    
-    updateButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const phongId = this.dataset.phongId;
-            const row = this.closest('tr');
-            const nhietDo = parseFloat(row.querySelector('.nhiet-do').value);
-            const doAm = parseFloat(row.querySelector('.do-am').value);
-            
-            if (isNaN(nhietDo) || isNaN(doAm)) {
-                alert('Vui lòng nhập đầy đủ nhiệt độ và độ ẩm!');
-                return;
-            }
-            
-            fetch(`/api/cap-nhat-moi-truong/${phongId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    nhiet_do: nhietDo,
-                    do_am: doAm
-                })
-            })
+// Cập nhật dữ liệu real-time
+function updateRoomData() {
+    const rooms = {{ phong_list|map(attribute='id')|list|tojson }};
+    rooms.forEach(roomId => {
+        fetch(`/api/cap-nhat-moi-truong/${roomId}`)
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
-                    alert('Cập nhật thành công!');
-                } else {
-                    alert(`Lỗi: ${data.message}`);
+                // Cập nhật UI
+                const room = document.querySelector(`#room-${roomId}`);
+                if (room) {
+                    // Cập nhật nhiệt độ
+                    room.querySelector('.temp-value').textContent = `${data.nhiet_do}°C`;
+                    // Cập nhật độ ẩm
+                    room.querySelector('.humidity-value').textContent = `${data.do_am}%`;
+                    // Cập nhật thời gian
+                    room.querySelector('.last-update').textContent = data.last_update;
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Đã có lỗi xảy ra khi cập nhật!');
             });
-        });
     });
-});
+}
+
+// Cập nhật mỗi 5 phút
+setInterval(updateRoomData, 300000);
+
+// Xác nhận xóa phòng
+function confirmDelete(roomId) {
+    if (confirm('Bạn có chắc chắn muốn xóa phòng này?')) {
+        window.location.href = `/xoa-phong/${roomId}`;
+    }
+}
 </script>
+{% endblock %}
 {% endblock %}

@@ -8,7 +8,7 @@
         <h1>Danh Sách Mẫu Nuôi Cấy</h1>
     </div>
     <div class="col-md-4 text-end">
-        <a href="{{ url_for('them_mau') }}" class="btn btn-primary">
+        <a href="{{ url_for('them_mau_moi') }}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Thêm Mẫu Mới
         </a>
     </div>
@@ -56,7 +56,7 @@
     <div class="col-12">
         <div class="alert alert-info">
             <i class="fas fa-info-circle"></i> Chưa có mẫu nuôi cấy nào. 
-            <a href="{{ url_for('them_mau') }}" class="alert-link">Thêm mẫu mới</a>
+            <a href="{{ url_for('them_mau_moi') }}" class="alert-link">Thêm mẫu mới</a>
         </div>
     </div>
     {% endfor %}

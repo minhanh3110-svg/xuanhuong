@@ -1,0 +1,77 @@
+from app import db
+from datetime import datetime
+
+class Mau(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ma_mau = db.Column(db.String(50), unique=True, nullable=False)
+    ten = db.Column(db.String(100), nullable=False)
+    mo_ta = db.Column(db.Text)
+    ngay_cay = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    trang_thai = db.Column(db.String(50), default='Mới tạo')
+    
+    # Foreign keys
+    phong_id = db.Column(db.Integer, db.ForeignKey('phong.id'), nullable=False)
+    nguoi_tao_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Relationships
+    nhat_ky = db.relationship('NhatKy', backref='mau', lazy=True, cascade='all, delete-orphan')
+    hinh_anh = db.relationship('HinhAnh', backref='mau', lazy=True, cascade='all, delete-orphan')
+    
+    def __init__(self, **kwargs):
+        super(Mau, self).__init__(**kwargs)
+        if not self.ma_mau:
+            self.ma_mau = self.generate_ma_mau()
+    
+    def generate_ma_mau(self):
+        """Tạo mã mẫu tự động theo định dạng: M{năm}{tháng}{số thứ tự}"""
+        now = datetime.utcnow()
+        prefix = f'M{now.year}{now.month:02d}'
+        
+        # Tìm mã mẫu cuối cùng có cùng prefix
+        last_mau = Mau.query.filter(
+            Mau.ma_mau.like(f'{prefix}%')
+        ).order_by(Mau.ma_mau.desc()).first()
+        
+        if last_mau:
+            last_number = int(last_mau.ma_mau[7:])
+            new_number = last_number + 1
+        else:
+            new_number = 1
+            
+        return f'{prefix}{new_number:04d}'
+    
+    @property
+    def tuoi(self):
+        """Tính tuổi của mẫu (số ngày từ khi cấy)"""
+        return (datetime.utcnow() - self.ngay_cay).days
+    
+    @property
+    def nhat_ky_moi_nhat(self):
+        """Lấy nhật ký mới nhất"""
+        return self.nhat_ky.order_by(NhatKy.ngay_ghi.desc()).first()
+    
+    def cap_nhat_trang_thai(self, trang_thai_moi, ghi_chu=None):
+        """Cập nhật trạng thái và tạo nhật ký"""
+        self.trang_thai = trang_thai_moi
+        if ghi_chu:
+            nhat_ky = NhatKy(
+                mau_id=self.id,
+                noi_dung=f'Cập nhật trạng thái: {trang_thai_moi}\nGhi chú: {ghi_chu}'
+            )
+            db.session.add(nhat_ky)
+        db.session.commit()
+
+class NhatKy(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    mau_id = db.Column(db.Integer, db.ForeignKey('mau.id'), nullable=False)
+    ngay_ghi = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    noi_dung = db.Column(db.Text, nullable=False)
+    nguoi_ghi_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+class HinhAnh(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    mau_id = db.Column(db.Integer, db.ForeignKey('mau.id'), nullable=False)
+    url = db.Column(db.String(200), nullable=False)
+    mo_ta = db.Column(db.String(200))
+    ngay_chup = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    nguoi_chup_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

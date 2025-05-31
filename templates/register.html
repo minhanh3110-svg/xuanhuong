@@ -1,76 +1,51 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="text-center">Đăng ký tài khoản</h3>
-                </div>
-                <div class="card-body">
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }}">{{ message }}</div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Đăng ký tài khoản</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Tên đăng nhập</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
                     
-                    <form method="POST">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="username" class="form-label">Tên đăng nhập *</label>
-                                <input type="text" class="form-control" id="username" name="username" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="email" class="form-label">Email *</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="full_name" class="form-label">Họ và tên *</label>
-                            <input type="text" class="form-control" id="full_name" name="full_name" required>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="department" class="form-label">Phòng ban</label>
-                                <select class="form-select" id="department" name="department">
-                                    <option value="">Chọn phòng ban</option>
-                                    {% for dept in departments %}
-                                    <option value="{{ dept }}">{{ dept }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="position" class="form-label">Chức vụ</label>
-                                <select class="form-select" id="position" name="position">
-                                    <option value="">Chọn chức vụ</option>
-                                    {% for pos in positions %}
-                                    <option value="{{ pos }}">{{ pos }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="password" class="form-label">Mật khẩu *</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="confirm_password" class="form-label">Xác nhận mật khẩu *</label>
-                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-                            </div>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Đăng ký</button>
-                            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary">Đã có tài khoản? Đăng nhập</a>
-                        </div>
-                    </form>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">Họ và tên</label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Mật khẩu</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Xác nhận mật khẩu</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Đăng ký</button>
+                    </div>
+                </form>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <p class="mb-0">Đã có tài khoản?</p>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary mt-2">
+                        Đăng nhập ngay
+                    </a>
                 </div>
             </div>
         </div>

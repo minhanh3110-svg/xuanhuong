@@ -9,14 +9,15 @@
         <div class="col-md-8">
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">Thông tin mẫu</h4>
+                    <h4 class="mb-0">{{ mau.ten }}</h4>
                     <div>
-                        <a href="{{ url_for('cap_nhat_mau', id=mau.id) }}" class="btn btn-primary btn-sm">
+                        <a href="{{ url_for('mau.cap_nhat_mau', id=mau.id) }}" 
+                           class="btn btn-primary btn-sm">
                             <i class="fas fa-edit me-2"></i>Chỉnh sửa
                         </a>
                         {% if current_user.role == 'admin' %}
-                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" 
-                                data-bs-target="#deleteModal">
+                        <button type="button" class="btn btn-danger btn-sm" 
+                                onclick="confirmDelete({{ mau.id }})">
                             <i class="fas fa-trash me-2"></i>Xóa
                         </button>
                         {% endif %}
@@ -31,22 +32,6 @@
                                     <td>{{ mau.ma_mau }}</td>
                                 </tr>
                                 <tr>
-                                    <th class="ps-0">Tên mẫu:</th>
-                                    <td>{{ mau.ten }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="ps-0">Phòng:</th>
-                                    <td>{{ mau.phong.ten }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="ps-0">Ngày cấy:</th>
-                                    <td>{{ mau.ngay_cay.strftime('%d/%m/%Y') }}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
                                     <th class="ps-0">Trạng thái:</th>
                                     <td>
                                         <span class="badge bg-{{ mau.trang_thai | status_color }}">
@@ -55,12 +40,36 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <th class="ps-0">Tuổi mẫu:</th>
-                                    <td>{{ mau.tuoi }} ngày</td>
+                                    <th class="ps-0">Phòng:</th>
+                                    <td>
+                                        <a href="{{ url_for('phong.chi_tiet_phong', id=mau.phong.id) }}">
+                                            {{ mau.phong.ten }}
+                                        </a>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <th class="ps-0">Người tạo:</th>
                                     <td>{{ mau.nguoi_tao.full_name }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th class="ps-0">Ngày cấy:</th>
+                                    <td>{{ mau.ngay_cay.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-0">Tuổi mẫu:</th>
+                                    <td>{{ mau.tuoi }} ngày</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-0">Cập nhật lần cuối:</th>
+                                    <td>{{ mau.updated_at.strftime('%H:%M:%S %d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-0">Người cập nhật:</th>
+                                    <td>{{ mau.nguoi_cap_nhat.full_name }}</td>
                                 </tr>
                             </table>
                         </div>
@@ -73,32 +82,38 @@
                 </div>
             </div>
 
-            <!-- Nhật ký theo dõi -->
+            <!-- Nhật ký -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Nhật ký theo dõi</h5>
-                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" 
-                            data-bs-target="#addLogModal">
-                        <i class="fas fa-plus me-2"></i>Thêm nhật ký
+                    <button type="button" class="btn btn-primary btn-sm" 
+                            data-bs-toggle="modal" data-bs-target="#themNhatKyModal">
+                        <i class="fas fa-plus me-2"></i>Thêm ghi chú
                     </button>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <div class="timeline">
-                        {% for nhat_ky in mau.nhat_ky|sort(attribute='ngay_ghi', reverse=true) %}
+                        {% for nhat_ky in mau.nhat_ky %}
                         <div class="timeline-item">
                             <div class="timeline-marker"></div>
                             <div class="timeline-content">
-                                <div class="d-flex justify-content-between">
-                                    <h6 class="mb-1">{{ nhat_ky.nguoi_ghi.full_name }}</h6>
-                                    <small class="text-muted">
-                                        {{ nhat_ky.ngay_ghi.strftime('%d/%m/%Y %H:%M') }}
-                                    </small>
+                                <div class="timeline-heading">
+                                    <span class="text-muted">
+                                        {{ nhat_ky.thoi_gian.strftime('%H:%M:%S %d/%m/%Y') }}
+                                    </span>
+                                    <span class="text-primary ms-2">
+                                        {{ nhat_ky.nguoi_ghi.full_name }}
+                                    </span>
                                 </div>
-                                <p class="mb-0">{{ nhat_ky.noi_dung }}</p>
+                                <div class="timeline-body">
+                                    {{ nhat_ky.noi_dung }}
+                                </div>
                             </div>
                         </div>
                         {% else %}
-                        <p class="text-center text-muted mb-0">Chưa có nhật ký nào</p>
+                        <div class="text-center text-muted p-3">
+                            <p class="mb-0">Chưa có ghi chú nào</p>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -107,56 +122,104 @@
 
         <!-- Sidebar -->
         <div class="col-md-4">
-            <!-- Điều kiện môi trường -->
+            <!-- Thông số môi trường -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">Điều kiện môi trường</h5>
+                    <h5 class="mb-0">Thông số môi trường</h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
+                    <!-- Nhiệt độ -->
+                    <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span>Nhiệt độ</span>
-                            <span class="badge bg-primary">{{ mau.phong.nhiet_do }}°C</span>
+                            <div>
+                                <i class="fas fa-temperature-high text-primary me-2"></i>
+                                <span>Nhiệt độ</span>
+                            </div>
+                            <span class="badge bg-{{ 'success' if 20 <= mau.phong.nhiet_do <= 30 else 'warning' }}">
+                                {{ mau.phong.nhiet_do }}°C
+                            </span>
                         </div>
                         <div class="progress" style="height: 5px;">
-                            <div class="progress-bar" role="progressbar" 
-                                 style="width: {{ (mau.phong.nhiet_do/40)*100 }}%"></div>
+                            <div class="progress-bar {{ 'bg-success' if 20 <= mau.phong.nhiet_do <= 30 else 'bg-warning' }}" 
+                                 role="progressbar" style="width: {{ (mau.phong.nhiet_do/40)*100 }}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mt-1">
+                            <span>0°C</span>
+                            <span>20°C</span>
+                            <span>40°C</span>
                         </div>
                     </div>
                     
-                    <div class="mb-3">
+                    <!-- Độ ẩm -->
+                    <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span>Độ ẩm</span>
-                            <span class="badge bg-info">{{ mau.phong.do_am }}%</span>
+                            <div>
+                                <i class="fas fa-tint text-info me-2"></i>
+                                <span>Độ ẩm</span>
+                            </div>
+                            <span class="badge bg-{{ 'success' if 60 <= mau.phong.do_am <= 80 else 'warning' }}">
+                                {{ mau.phong.do_am }}%
+                            </span>
                         </div>
                         <div class="progress" style="height: 5px;">
-                            <div class="progress-bar bg-info" role="progressbar" 
-                                 style="width: {{ mau.phong.do_am }}%"></div>
+                            <div class="progress-bar {{ 'bg-success' if 60 <= mau.phong.do_am <= 80 else 'bg-warning' }}" 
+                                 role="progressbar" style="width: {{ mau.phong.do_am }}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mt-1">
+                            <span>0%</span>
+                            <span>50%</span>
+                            <span>100%</span>
                         </div>
                     </div>
                     
+                    <!-- Ánh sáng -->
                     {% if mau.phong.anh_sang %}
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span>Ánh sáng</span>
-                            <span class="badge bg-warning">{{ mau.phong.anh_sang }} lux</span>
+                            <div>
+                                <i class="fas fa-sun text-warning me-2"></i>
+                                <span>Ánh sáng</span>
+                            </div>
+                            <span class="badge bg-{{ 'success' if 1000 <= mau.phong.anh_sang <= 10000 else 'warning' }}">
+                                {{ mau.phong.anh_sang }} lux
+                            </span>
                         </div>
                         <div class="progress" style="height: 5px;">
-                            <div class="progress-bar bg-warning" role="progressbar" 
-                                 style="width: {{ (mau.phong.anh_sang/10000)*100 }}%"></div>
+                            <div class="progress-bar {{ 'bg-success' if 1000 <= mau.phong.anh_sang <= 10000 else 'bg-warning' }}" 
+                                 role="progressbar" style="width: {{ (mau.phong.anh_sang/10000)*100 }}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mt-1">
+                            <span>0 lux</span>
+                            <span>5000 lux</span>
+                            <span>10000 lux</span>
                         </div>
                     </div>
                     {% endif %}
                     
+                    <!-- CO2 -->
                     {% if mau.phong.co2 %}
                     <div>
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span>CO2</span>
-                            <span class="badge bg-success">{{ mau.phong.co2 }} ppm</span>
+                            <div>
+                                <i class="fas fa-wind text-success me-2"></i>
+                                <span>CO2</span>
+                            </div>
+                            <span class="badge bg-{{ 'success' if 350 <= mau.phong.co2 <= 1000 else 'warning' }}">
+                                {{ mau.phong.co2 }} ppm
+                            </span>
                         </div>
                         <div class="progress" style="height: 5px;">
-                            <div class="progress-bar bg-success" role="progressbar" 
-                                 style="width: {{ (mau.phong.co2/1000)*100 }}%"></div>
+                            <div class="progress-bar {{ 'bg-success' if 350 <= mau.phong.co2 <= 1000 else 'bg-warning' }}" 
+                                 role="progressbar" style="width: {{ (mau.phong.co2/1000)*100 }}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small mt-1">
+                            <span>0 ppm</span>
+                            <span>500 ppm</span>
+                            <span>1000 ppm</span>
                         </div>
                     </div>
                     {% endif %}
@@ -167,24 +230,27 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Hình ảnh</h5>
-                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" 
-                            data-bs-target="#addImageModal">
-                        <i class="fas fa-upload me-2"></i>Thêm ảnh
+                    <button type="button" class="btn btn-primary btn-sm" 
+                            data-bs-toggle="modal" data-bs-target="#themHinhAnhModal">
+                        <i class="fas fa-plus me-2"></i>Thêm ảnh
                     </button>
                 </div>
                 <div class="card-body">
                     <div class="row g-2">
-                        {% for hinh in mau.hinh_anh|sort(attribute='ngay_chup', reverse=true) %}
+                        {% for hinh_anh in mau.hinh_anh %}
                         <div class="col-6">
-                            <a href="{{ hinh.url }}" data-lightbox="sample-images" 
-                               data-title="{{ hinh.mo_ta }}">
-                                <img src="{{ hinh.url }}" class="img-fluid rounded" 
-                                     alt="{{ hinh.mo_ta or 'Hình ảnh mẫu' }}">
+                            <a href="{{ hinh_anh.url }}" class="d-block" data-lightbox="mau-images" 
+                               data-title="{{ hinh_anh.mo_ta or '' }}">
+                                <img src="{{ hinh_anh.url }}" class="img-fluid rounded" 
+                                     alt="{{ mau.ten }}">
                             </a>
                         </div>
                         {% else %}
-                        <div class="col-12 text-center text-muted">
-                            <p class="mb-0">Chưa có hình ảnh nào</p>
+                        <div class="col-12">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-image fa-3x mb-2"></i>
+                                <p class="mb-0">Chưa có hình ảnh nào</p>
+                            </div>
                         </div>
                         {% endfor %}
                     </div>
@@ -195,13 +261,13 @@
 </div>
 
 <!-- Modal thêm nhật ký -->
-<div class="modal fade" id="addLogModal" tabindex="-1">
+<div class="modal fade" id="themNhatKyModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('them_nhat_ky', mau_id=mau.id) }}">
+            <form method="POST" action="{{ url_for('mau.them_nhat_ky', id=mau.id) }}">
                 {{ form.csrf_token }}
                 <div class="modal-header">
-                    <h5 class="modal-title">Thêm nhật ký mới</h5>
+                    <h5 class="modal-title">Thêm ghi chú mới</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -212,7 +278,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">Lưu nhật ký</button>
+                    <button type="submit" class="btn btn-primary">Lưu</button>
                 </div>
             </form>
         </div>
@@ -220,10 +286,10 @@
 </div>
 
 <!-- Modal thêm hình ảnh -->
-<div class="modal fade" id="addImageModal" tabindex="-1">
+<div class="modal fade" id="themHinhAnhModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('them_hinh_anh', mau_id=mau.id) }}" 
+            <form method="POST" action="{{ url_for('mau.them_hinh_anh', id=mau.id) }}" 
                   enctype="multipart/form-data">
                 {{ form.csrf_token }}
                 <div class="modal-header">
@@ -232,7 +298,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Chọn ảnh <span class="text-danger">*</span></label>
+                        <label class="form-label">Hình ảnh <span class="text-danger">*</span></label>
                         <input type="file" class="form-control" name="hinh_anh" 
                                accept="image/*" multiple required>
                         <div class="form-text">
@@ -241,7 +307,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Mô tả</label>
-                        <input type="text" class="form-control" name="mo_ta">
+                        <textarea class="form-control" name="mo_ta" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -253,64 +319,18 @@
     </div>
 </div>
 
-<!-- Modal xác nhận xóa -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Xác nhận xóa</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-0">Bạn có chắc chắn muốn xóa mẫu này? Hành động này không thể hoàn tác.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <a href="{{ url_for('xoa_mau', id=mau.id) }}" class="btn btn-danger">
-                    Xác nhận xóa
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-{% block styles %}
-<link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css" rel="stylesheet">
-<style>
-.timeline {
-    position: relative;
-    padding: 20px 0;
-}
-.timeline-item {
-    position: relative;
-    padding-left: 40px;
-    margin-bottom: 20px;
-}
-.timeline-marker {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    background: #e9ecef;
-    border: 3px solid #adb5bd;
-}
-.timeline-item:not(:last-child):before {
-    content: '';
-    position: absolute;
-    left: 7px;
-    top: 15px;
-    height: calc(100% + 5px);
-    width: 2px;
-    background: #e9ecef;
-}
-</style>
-{% endblock %}
-
 {% block scripts %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/js/lightbox.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/css/lightbox.min.css" rel="stylesheet">
+
 <script>
+// Xác nhận xóa mẫu
+function confirmDelete(mauId) {
+    if (confirm('Bạn có chắc chắn muốn xóa mẫu này? Hành động này không thể hoàn tác.')) {
+        window.location.href = `/xoa-mau/${mauId}`;
+    }
+}
+
 // Kiểm tra kích thước file ảnh
 document.querySelector('input[name="hinh_anh"]').addEventListener('change', function(e) {
     const files = e.target.files;
@@ -328,8 +348,56 @@ document.querySelector('input[name="hinh_anh"]').addEventListener('change', func
 // Cấu hình lightbox
 lightbox.option({
     'resizeDuration': 200,
-    'wrapAround': true
+    'wrapAround': true,
+    'albumLabel': 'Ảnh %1 / %2'
 });
 </script>
+
+<style>
+.timeline {
+    position: relative;
+    padding: 1rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 1.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 2.5rem;
+    padding-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 1.15rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: #0d6efd;
+    border: 2px solid #fff;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+}
+
+.timeline-heading {
+    margin-bottom: 0.5rem;
+}
+
+.timeline-body {
+    white-space: pre-line;
+}
+</style>
 {% endblock %}
 {% endblock %}

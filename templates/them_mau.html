@@ -11,22 +11,26 @@
                     <h4 class="mb-0">Thêm mẫu nuôi cấy mới</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('them_mau_moi') }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ url_for('mau.them_mau_moi') }}" 
+                          enctype="multipart/form-data">
                         {{ form.csrf_token }}
                         
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Tên mẫu <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="ten" required>
+                                <div class="form-text">Nhập tên mẫu để dễ dàng phân biệt</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Phòng nuôi cấy <span class="text-danger">*</span></label>
-                                <select class="form-select" name="phong_id" required>
-                                    <option value="">Chọn phòng</option>
-                                    {% for phong in phong_list %}
-                                    <option value="{{ phong.id }}">{{ phong.ten }}</option>
-                                    {% endfor %}
-                                </select>
+                                <label class="form-label">Mã mẫu</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="ma_mau" readonly>
+                                    <button type="button" class="btn btn-outline-secondary" 
+                                            onclick="generateMaMau()">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">Mã mẫu sẽ được tạo tự động</div>
                             </div>
                         </div>
                         
@@ -38,18 +42,26 @@
                         
                         <div class="row mb-3">
                             <div class="col-md-6">
+                                <label class="form-label">Phòng nuôi cấy <span class="text-danger">*</span></label>
+                                <select class="form-select" name="phong_id" required>
+                                    <option value="">Chọn phòng...</option>
+                                    {% for phong in phong_list %}
+                                    <option value="{{ phong.id }}" 
+                                            {% if phong.trang_thai != 'Hoạt động' %}disabled{% endif %}>
+                                        {{ phong.ten }}
+                                        {% if phong.trang_thai != 'Hoạt động' %}
+                                        ({{ phong.trang_thai }})
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Chọn phòng để nuôi cấy mẫu</div>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label">Ngày cấy <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" name="ngay_cay" 
                                        value="{{ today }}" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Trạng thái</label>
-                                <select class="form-select" name="trang_thai">
-                                    <option value="Mới tạo">Mới tạo</option>
-                                    <option value="Đang phát triển">Đang phát triển</option>
-                                    <option value="Cần chăm sóc">Cần chăm sóc</option>
-                                    <option value="Đã hoàn thành">Đã hoàn thành</option>
-                                </select>
+                                <div class="form-text">Ngày bắt đầu nuôi cấy mẫu</div>
                             </div>
                         </div>
                         
@@ -63,7 +75,7 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Ghi chú ban đầu</label>
+                            <label class="form-label">Ghi chú</label>
                             <textarea class="form-control" name="ghi_chu" rows="2"></textarea>
                             <div class="form-text">
                                 Ghi chú này sẽ được lưu vào nhật ký như bản ghi đầu tiên
@@ -81,12 +93,68 @@
                     </form>
                 </div>
             </div>
+            
+            <!-- Hướng dẫn -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Hướng dẫn</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6>Tên mẫu</h6>
+                        <ul class="mb-0">
+                            <li>Nên đặt tên dễ nhớ và có ý nghĩa</li>
+                            <li>Có thể thêm thông tin về loại cây, phương pháp nuôi cấy</li>
+                            <li>Ví dụ: Lan Hồ Điệp - MS1, Cúc - Nuôi cấy đỉnh sinh trưởng</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6>Mô tả</h6>
+                        <ul class="mb-0">
+                            <li>Mô tả chi tiết về nguồn gốc mẫu</li>
+                            <li>Ghi rõ phương pháp và môi trường nuôi cấy</li>
+                            <li>Thêm các đặc điểm quan trọng cần lưu ý</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6>Hình ảnh</h6>
+                        <ul class="mb-0">
+                            <li>Chụp ảnh rõ nét, đủ ánh sáng</li>
+                            <li>Nên chụp từ nhiều góc độ khác nhau</li>
+                            <li>Thêm vật để tham chiếu kích thước nếu cần</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h6>Ghi chú</h6>
+                        <ul class="mb-0">
+                            <li>Ghi lại các quan sát ban đầu</li>
+                            <li>Thêm các yêu cầu đặc biệt về chăm sóc</li>
+                            <li>Đánh dấu các mốc thời gian quan trọng</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 {% block scripts %}
 <script>
+// Tạo mã mẫu tự động
+function generateMaMau() {
+    fetch('/api/generate-ma-mau')
+        .then(response => response.json())
+        .then(data => {
+            document.querySelector('input[name="ma_mau"]').value = data.ma_mau;
+        });
+}
+
+// Tự động tạo mã mẫu khi trang tải xong
+document.addEventListener('DOMContentLoaded', generateMaMau);
+
 // Kiểm tra kích thước file ảnh
 document.querySelector('input[name="hinh_anh"]').addEventListener('change', function(e) {
     const files = e.target.files;
@@ -101,17 +169,14 @@ document.querySelector('input[name="hinh_anh"]').addEventListener('change', func
     }
 });
 
-// Tự động điền mã mẫu
-document.querySelector('input[name="ten"]').addEventListener('blur', function(e) {
-    const ten = e.target.value.trim();
-    if (ten) {
-        fetch('/api/generate-ma-mau')
-            .then(response => response.json())
-            .then(data => {
-                if (data.ma_mau) {
-                    document.querySelector('input[name="ma_mau"]').value = data.ma_mau;
-                }
-            });
+// Xác nhận trước khi hủy
+document.querySelector('a.btn-outline-secondary').addEventListener('click', function(e) {
+    const form = document.querySelector('form');
+    if (form.ten.value || form.mo_ta.value || form.ghi_chu.value || 
+        form.hinh_anh.files.length > 0) {
+        if (!confirm('Bạn có chắc chắn muốn hủy? Mọi thông tin đã nhập sẽ bị mất.')) {
+            e.preventDefault();
+        }
     }
 });
 </script>

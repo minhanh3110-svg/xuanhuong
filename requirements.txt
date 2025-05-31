@@ -1,14 +1,35 @@
+# Các thư viện cốt lõi của Flask
 Flask==3.0.2
 Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
 Flask-Mail==0.9.1
 Flask-Limiter==3.5.1
+Flask-Migrate==4.0.5
+Flask-Principal==0.4.0
 Werkzeug==3.0.1
+
+# Thư viện xử lý cơ sở dữ liệu
 SQLAlchemy==2.0.28
+psycopg2-binary==2.9.9
+
+# Thư viện bảo mật và xác thực
 pyotp==2.9.0
 qrcode==7.4.2
-python-dotenv==1.0.1
 itsdangerous==2.1.2
+email-validator==2.1.0.post1
+
+# Thư viện xử lý ảnh và tiện ích
 Pillow==10.2.0
+python-dotenv==1.0.1
+Jinja2==3.1.2
+
+# Máy chủ cho môi trường production
 gunicorn==21.2.0
-psycopg2-binary==2.9.9
+
+# Database
+DATABASE_URL=sqlite:///database.db
+
+# Email settings
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_DEFAULT_SENDER=your-email@gmail.com 

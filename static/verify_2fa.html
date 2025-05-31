@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Xác thực 2 lớp</h3>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                    <h4>Nhập mã xác thực</h4>
+                    <p class="text-muted">
+                        Vui lòng nhập mã 6 số từ ứng dụng Google Authenticator hoặc Authy
+                    </p>
+                </div>
+                
+                <form method="POST" action="{{ url_for('auth.verify_2fa') }}">
+                    {{ form.csrf_token }}
+                    <input type="hidden" name="username" value="{{ username }}">
+                    
+                    <div class="mb-4">
+                        <div class="form-floating">
+                            <input type="text" class="form-control form-control-lg text-center" 
+                                   id="otp_code" name="otp_code" required autofocus
+                                   maxlength="6" pattern="[0-9]{6}"
+                                   style="letter-spacing: 0.5em; font-size: 1.5em;">
+                            <label for="otp_code">Mã xác thực</label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-check"></i> Xác thực
+                        </button>
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Quay lại đăng nhập
+                        </a>
+                    </div>
+                </form>
+                
+                <div class="mt-4">
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-info-circle"></i> Không thể truy cập ứng dụng xác thực?
+                        </h5>
+                        <p class="mb-0">
+                            Vui lòng liên hệ với quản trị viên để được hỗ trợ.
+                            <a href="mailto:admin@example.com" class="alert-link">admin@example.com</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// Auto focus next input and only allow numbers
+document.getElementById('otp_code').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+});
+
+// Auto submit when code length is 6
+document.getElementById('otp_code').addEventListener('keyup', function(e) {
+    if (this.value.length === 6) {
+        document.querySelector('form').submit();
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

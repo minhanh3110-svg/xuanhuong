@@ -25,7 +25,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="card-title mb-0">Đang phát triển</h6>
-                            <h2 class="mt-2 mb-0">{{ stats.growing_samples }}</h2>
+                            <h2 class="mt-2 mb-0">{{ stats.active_samples }}</h2>
                         </div>
                         <i class="fas fa-seedling fa-2x"></i>
                     </div>
@@ -37,20 +37,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title mb-0">Cần chăm sóc</h6>
-                            <h2 class="mt-2 mb-0">{{ stats.needs_attention }}</h2>
-                        </div>
-                        <i class="fas fa-exclamation-triangle fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-title mb-0">Phòng nuôi cấy</h6>
+                            <h6 class="card-title mb-0">Tổng số phòng</h6>
                             <h2 class="mt-2 mb-0">{{ stats.total_rooms }}</h2>
                         </div>
                         <i class="fas fa-door-open fa-2x"></i>
@@ -58,49 +45,44 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Cảnh báo</h6>
+                            <h2 class="mt-2 mb-0">{{ rooms_with_alerts|length }}</h2>
+                        </div>
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="row g-4">
-        <!-- Danh sách mẫu mới nhất -->
+        <!-- Hoạt động gần đây -->
         <div class="col-md-8">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Mẫu mới nhất</h5>
-                    <a href="{{ url_for('them_mau_moi') }}" class="btn btn-primary btn-sm">
-                        <i class="fas fa-plus"></i> Thêm mẫu
-                    </a>
+                    <h5 class="card-title mb-0">Hoạt động gần đây</h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>Mã mẫu</th>
-                                    <th>Tên</th>
-                                    <th>Phòng</th>
-                                    <th>Trạng thái</th>
-                                    <th>Ngày tạo</th>
-                                    <th></th>
+                                    <th>Thời gian</th>
+                                    <th>Mẫu</th>
+                                    <th>Nội dung</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for mau in latest_samples %}
+                                {% for activity in recent_activities %}
                                 <tr>
-                                    <td>{{ mau.ma_mau }}</td>
-                                    <td>{{ mau.ten }}</td>
-                                    <td>{{ mau.phong.ten }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ mau.trang_thai | status_color }}">
-                                            {{ mau.trang_thai }}
-                                        </span>
-                                    </td>
-                                    <td>{{ mau.ngay_cay.strftime('%d/%m/%Y') }}</td>
-                                    <td>
-                                        <a href="{{ url_for('chi_tiet_mau', id=mau.id) }}" 
-                                           class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                    </td>
+                                    <td>{{ activity.ngay_ghi.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td>{{ activity.mau.ma_mau }}</td>
+                                    <td>{{ activity.noi_dung }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -110,61 +92,42 @@
             </div>
         </div>
 
-        <!-- Điều kiện môi trường -->
+        <!-- Cảnh báo môi trường -->
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Điều kiện môi trường</h5>
+                    <h5 class="card-title mb-0">Cảnh báo môi trường</h5>
                 </div>
                 <div class="card-body">
-                    {% for phong in rooms %}
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0">{{ phong.ten }}</h6>
-                            <span class="text-muted small">Cập nhật: {{ phong.last_update.strftime('%H:%M') }}</span>
-                        </div>
-                        <div class="row g-2">
+                    {% for phong in rooms_with_alerts %}
+                    <div class="alert alert-warning mb-3">
+                        <h6 class="alert-heading">{{ phong.ten }}</h6>
+                        <div class="row g-2 mt-2">
                             <div class="col-6">
-                                <div class="p-3 border rounded text-center">
-                                    <div class="text-primary mb-1">
-                                        <i class="fas fa-temperature-high"></i>
-                                    </div>
-                                    <div class="small text-muted">Nhiệt độ</div>
-                                    <div class="fw-bold">{{ phong.nhiet_do }}°C</div>
-                                </div>
+                                <div class="small">Nhiệt độ:</div>
+                                <strong {% if phong.nhiet_do > 30 or phong.nhiet_do < 15 %}class="text-danger"{% endif %}>
+                                    {{ phong.nhiet_do }}°C
+                                </strong>
                             </div>
                             <div class="col-6">
-                                <div class="p-3 border rounded text-center">
-                                    <div class="text-info mb-1">
-                                        <i class="fas fa-tint"></i>
-                                    </div>
-                                    <div class="small text-muted">Độ ẩm</div>
-                                    <div class="fw-bold">{{ phong.do_am }}%</div>
-                                </div>
+                                <div class="small">Độ ẩm:</div>
+                                <strong {% if phong.do_am > 80 or phong.do_am < 40 %}class="text-danger"{% endif %}>
+                                    {{ phong.do_am }}%
+                                </strong>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
+                    
+                    {% if not rooms_with_alerts %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <p>Không có cảnh báo</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-// Cập nhật điều kiện môi trường real-time
-function updateEnvironmentData() {
-    fetch('/api/environment-data')
-        .then(response => response.json())
-        .then(data => {
-            // Cập nhật dữ liệu
-        });
-}
-
-// Cập nhật mỗi 5 phút
-setInterval(updateEnvironmentData, 300000);
-</script>
-{% endblock %}
 {% endblock %}

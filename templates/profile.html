@@ -1,135 +1,216 @@
 {% extends "base.html" %}
 
+{% block title %}Thông tin cá nhân - Quản Lý Cấy Mô{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-center">Thông tin cá nhân</h3>
+<div class="container py-4">
+    <div class="row">
+        <!-- Thông tin cá nhân -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <img src="{{ current_user.avatar_url or url_for('static', filename='images/default-avatar.png') }}"
+                         alt="Avatar" class="rounded-circle img-fluid mb-3"
+                         style="width: 150px; height: 150px; object-fit: cover;">
+                    <h5 class="mb-1">{{ current_user.full_name }}</h5>
+                    <p class="text-muted mb-3">{{ current_user.position }}</p>
+                    <div>
+                        <span class="badge bg-primary">{{ current_user.role | role_text }}</span>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
-                    <div class="row">
-                        <div class="col-md-4 text-center mb-3">
-                            <img src="{{ current_user.avatar_url or url_for('static', filename='images/default-avatar.png') }}" 
-                                 class="img-fluid rounded-circle mb-3" style="max-width: 200px;">
-                            <div class="mb-3">
-                                <label for="avatar" class="form-label">Thay đổi ảnh đại diện</label>
-                                <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">Tên đăng nhập</label>
-                                <input type="text" class="form-control" value="{{ current_user.username }}" readonly>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" value="{{ current_user.email }}" readonly>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="full_name" class="form-label">Họ và tên</label>
-                                <input type="text" class="form-control" id="full_name" name="full_name" 
-                                       value="{{ current_user.full_name }}" required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="phone" class="form-label">Số điện thoại</label>
-                                <input type="tel" class="form-control" id="phone" name="phone" 
-                                       value="{{ current_user.phone }}">
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="department" class="form-label">Phòng ban</label>
-                                <input type="text" class="form-control" id="department" name="department" 
-                                       value="{{ current_user.department }}">
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="position" class="form-label">Chức vụ</label>
-                                <input type="text" class="form-control" id="position" name="position" 
-                                       value="{{ current_user.position }}">
-                            </div>
-                        </div>
+
+            <!-- Thống kê hoạt động -->
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title mb-3">Thống kê hoạt động</h6>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Mẫu đang quản lý</span>
+                        <span class="badge bg-primary rounded-pill">{{ stats.managing_samples }}</span>
                     </div>
-                    
-                    <hr>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h4>Bảo mật</h4>
-                            <div class="mb-3">
-                                <label for="current_password" class="form-label">Mật khẩu hiện tại</label>
-                                <input type="password" class="form-control" id="current_password" name="current_password">
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="new_password" class="form-label">Mật khẩu mới</label>
-                                <input type="password" class="form-control" id="new_password" name="new_password">
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="confirm_password" class="form-label">Xác nhận mật khẩu mới</label>
-                                <input type="password" class="form-control" id="confirm_password" name="confirm_password">
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <h4>Xác thực hai lớp</h4>
-                            {% if current_user.otp_enabled %}
-                            <p class="text-success">
-                                <i class="fas fa-check-circle"></i> Đã bật xác thực hai lớp
-                            </p>
-                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#disable2FAModal">
-                                Tắt xác thực hai lớp
-                            </button>
-                            {% else %}
-                            <p class="text-warning">
-                                <i class="fas fa-exclamation-triangle"></i> Chưa bật xác thực hai lớp
-                            </p>
-                            <a href="{{ url_for('auth.setup_2fa') }}" class="btn btn-primary">
-                                Bật xác thực hai lớp
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Nhật ký đã tạo</span>
+                        <span class="badge bg-info rounded-pill">{{ stats.total_logs }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Tỷ lệ thành công</span>
+                        <span class="badge bg-success rounded-pill">{{ stats.success_rate }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chi tiết thông tin và cài đặt -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#info">
+                                <i class="fas fa-user me-2"></i>Thông tin
                             </a>
-                            {% endif %}
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#security">
+                                <i class="fas fa-shield-alt me-2"></i>Bảo mật
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#notifications">
+                                <i class="fas fa-bell me-2"></i>Thông báo
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content pt-4">
+                        <!-- Tab thông tin -->
+                        <div class="tab-pane fade show active" id="info">
+                            <form method="POST" action="{{ url_for('main.update_profile') }}" enctype="multipart/form-data">
+                                {{ form.csrf_token }}
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Họ và tên</label>
+                                        <input type="text" class="form-control" name="full_name"
+                                               value="{{ current_user.full_name }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" class="form-control" value="{{ current_user.email }}" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Số điện thoại</label>
+                                        <input type="tel" class="form-control" name="phone"
+                                               value="{{ current_user.phone }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Phòng ban</label>
+                                        <input type="text" class="form-control" name="department"
+                                               value="{{ current_user.department }}">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Địa chỉ</label>
+                                    <textarea class="form-control" name="address" rows="2">{{ current_user.address }}</textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Ảnh đại diện</label>
+                                    <input type="file" class="form-control" name="avatar" accept="image/*">
+                                    <div class="form-text">Cho phép: JPG, PNG. Tối đa: 2MB</div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Lưu thay đổi
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Tab bảo mật -->
+                        <div class="tab-pane fade" id="security">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div>
+                                    <h5 class="mb-1">Xác thực hai lớp</h5>
+                                    <p class="text-muted mb-0">
+                                        {% if current_user.otp_enabled %}
+                                        Đã bật - Được bảo vệ bởi Google Authenticator
+                                        {% else %}
+                                        Chưa bật - Khuyến nghị bật để tăng cường bảo mật
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <a href="{{ url_for('auth.setup_2fa') }}" class="btn btn-outline-primary">
+                                    {% if current_user.otp_enabled %}
+                                    <i class="fas fa-cog me-2"></i>Cài đặt
+                                    {% else %}
+                                    <i class="fas fa-shield-alt me-2"></i>Bật xác thực
+                                    {% endif %}
+                                </a>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">Mật khẩu</h5>
+                                    <p class="text-muted mb-0">
+                                        Thay đổi lần cuối: 
+                                        {{ current_user.last_password_change.strftime('%d/%m/%Y') if current_user.last_password_change else 'Chưa có thông tin' }}
+                                    </p>
+                                </div>
+                                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-key me-2"></i>Đổi mật khẩu
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Tab thông báo -->
+                        <div class="tab-pane fade" id="notifications">
+                            <form method="POST" action="{{ url_for('main.update_notifications') }}">
+                                {{ form.csrf_token }}
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="email_alerts"
+                                               id="emailAlerts" {% if notifications.email_alerts %}checked{% endif %}>
+                                        <label class="form-check-label" for="emailAlerts">
+                                            Thông báo qua email
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Nhận email khi có cảnh báo quan trọng</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="browser_notifications"
+                                               id="browserNotifications" {% if notifications.browser_notifications %}checked{% endif %}>
+                                        <label class="form-check-label" for="browserNotifications">
+                                            Thông báo trên trình duyệt
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Hiển thị thông báo ngay trên trình duyệt</div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Lưu cài đặt
+                                </button>
+                            </form>
                         </div>
                     </div>
-                    
-                    <hr>
-                    
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal xác nhận tắt 2FA -->
-<div class="modal fade" id="disable2FAModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Xác nhận tắt xác thực hai lớp</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Bạn có chắc chắn muốn tắt xác thực hai lớp không?</p>
-                <p class="text-danger">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Việc này sẽ làm giảm tính bảo mật cho tài khoản của bạn.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <form action="{{ url_for('auth.disable_2fa') }}" method="POST" class="d-inline">
-                    <button type="submit" class="btn btn-danger">Tắt xác thực hai lớp</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+{% block scripts %}
+<script>
+// Preview ảnh đại diện trước khi upload
+document.querySelector('input[name="avatar"]').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Kích thước file không được vượt quá 2MB');
+            this.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.querySelector('img[alt="Avatar"]').src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+});
+
+// Kiểm tra form trước khi submit
+document.querySelector('form').addEventListener('submit', function(e) {
+    const phone = document.querySelector('input[name="phone"]').value;
+    if (phone && !/^[0-9]{10,11}$/.test(phone)) {
+        e.preventDefault();
+        alert('Số điện thoại không hợp lệ');
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}

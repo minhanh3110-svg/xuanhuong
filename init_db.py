@@ -1,15 +1,30 @@
-from app import app, db
-from sqlalchemy import inspect
+from app import app, db, User
+from werkzeug.security import generate_password_hash
 
-def has_table(table_name):
-    inspector = inspect(db.engine)
-    return table_name in inspector.get_table_names()
-
-with app.app_context():
-    # Kiểm tra xem các bảng đã tồn tại chưa
-    if not (has_table('mau') and has_table('phong') and has_table('nhat_ky')):
-        # Chỉ tạo bảng nếu chưa tồn tại
+def init_db():
+    with app.app_context():
+        # Tạo tất cả các bảng
         db.create_all()
-        print("Đã khởi tạo database thành công!")
-    else:
-        print("Database đã tồn tại, không cần khởi tạo lại.") 
+        
+        # Kiểm tra xem đã có admin chưa
+        admin = User.query.filter_by(username='admin').first()
+        if not admin:
+            # Tạo tài khoản admin mặc định
+            admin = User(
+                username='admin',
+                email='admin@example.com',
+                full_name='Administrator',
+                password_hash=generate_password_hash('admin123'),
+                role='admin',
+                is_active=True,
+                department='Phòng Quản lý',
+                position='Quản trị viên'
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print('Đã tạo tài khoản admin mặc định')
+        
+        print('Khởi tạo database thành công!')
+
+if __name__ == '__main__':
+    init_db() 

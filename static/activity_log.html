@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Lịch sử hoạt động</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>Hoạt động</th>
+                                <th>Chi tiết</th>
+                                <th>Địa chỉ IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for activity in activities.items %}
+                            <tr>
+                                <td>{{ activity.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                                <td>{{ activity.action_text }}</td>
+                                <td>{{ activity.details or '' }}</td>
+                                <td>{{ activity.ip_address }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center">Chưa có hoạt động nào được ghi nhận</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if activities.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if activities.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('auth.activity_log', page=activities.prev_num) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in activities.iter_pages(left_edge=2, left_current=2, right_current=2, right_edge=2) %}
+                            {% if page_num %}
+                                {% if page_num == activities.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('auth.activity_log', page=page_num) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if activities.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('auth.activity_log', page=activities.next_num) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -434,30 +434,19 @@ def api_thong_ke_nang_suat():
     }
     return jsonify(stats)
 
-# Initialize database and create admin user
-# Initialize database and create admin user
-def init_db():
-    with app.app_context():
-        db.create_all()
-
 @app.route('/tao-admin')
 def tao_admin():
+    if User.query.filter_by(username='admin').first():
+        return "⚠️ Tài khoản admin đã tồn tại. Không cần tạo lại."
+
+    user = User(username='admin', name='Administrator', role='admin')
+    user.set_password('123456')  # Mật khẩu mặc định
+    db.session.add(user)
+    db.session.commit()
+
+    return "✅ Đã tạo tài khoản admin. Đăng nhập với user: admin / pass: 123456"
+
+if __name__ == '__main__':
     with app.app_context():
-        if User.query.filter_by(username='admin').first():
-            return "⚠️ Tài khoản admin đã tồn tại. Không cần tạo lại."
-
-        user = User(username='admin', name='Administrator', role='admin')
-        user.set_password('123456')  # Mật khẩu mặc định
-        db.session.add(user)
-        db.session.commit()
-
-        return "✅ Đã tạo tài khoản admin. Đăng nhập với user: admin / pass: 123456"
-
-if __name__ == '__main__':
-    init_db()
+        db.create_all()
     app.run(debug=True)
-
-
-if __name__ == '__main__':
-    init_db()
-    app.run(debug=True) 

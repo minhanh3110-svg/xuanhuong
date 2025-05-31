@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng nhập hệ thống</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 40px; }
+        .login-container {
+            max-width: 400px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h2 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; }
+        input { width: 100%; padding: 10px; margin-top: 5px; }
+        .btn { width: 100%; padding: 10px; background-color: #007BFF; color: white; border: none; border-radius: 5px; }
+        .btn:hover { background-color: #0056b3; }
+        .error { color: red; margin-bottom: 10px; }
+        .link { text-align: center; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Đăng nhập</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="error">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="username">Tên đăng nhập</label>
+                <input type="text" name="username" value="{{ username or '' }}" required>
+            </div>
+
+            {% if show_otp %}
+                <div class="form-group">
+                    <label for="otp_code">Mã OTP</label>
+                    <input type="text" name="otp_code" required>
+                </div>
+            {% else %}
+                <div class="form-group">
+                    <label for="password">Mật khẩu</label>
+                    <input type="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" name="remember"> Ghi nhớ đăng nhập</label>
+                </div>
+            {% endif %}
+
+            <button type="submit" class="btn">Đăng nhập</button>
+        </form>
+
+        <div class="link">
+            <a href="{{ url_for('auth.forgot_password') }}">Quên mật khẩu?</a> | 
+            <a href="{{ url_for('auth.register') }}">Đăng ký</a>
+        </div>
+    </div>
+</body>
+</html>

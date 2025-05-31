@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tài khoản đã được phê duyệt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #198754;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #ffffff;
+            padding: 30px;
+            border: 1px solid #dddddd;
+            border-radius: 0 0 5px 5px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #198754;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666666;
+            font-size: 12px;
+        }
+        .info {
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .features {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            margin-bottom: 15px;
+        }
+        .feature-item i {
+            color: #198754;
+            margin-right: 10px;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100%;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Chúc mừng! Tài khoản của bạn đã được phê duyệt</h1>
+        </div>
+        <div class="content">
+            <p>Xin chào {{ user.full_name }},</p>
+            
+            <p>
+                Chúng tôi vui mừng thông báo rằng tài khoản của bạn tại Hệ thống Quản lý 
+                Nuôi Cấy Mô đã được phê duyệt. Bạn có thể bắt đầu sử dụng hệ thống ngay bây giờ.
+            </p>
+            
+            <div class="info">
+                <p><strong>Thông tin tài khoản:</strong></p>
+                <ul>
+                    <li>Tên đăng nhập: {{ user.username }}</li>
+                    <li>Email: {{ user.email }}</li>
+                    <li>Vai trò: {{ user.role }}</li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="{{ login_url }}" class="button">Đăng nhập ngay</a>
+            </div>
+            
+            <div class="features">
+                <h3>Các tính năng chính:</h3>
+                <div class="feature-item">
+                    <i>✓</i> Quản lý mẫu nuôi cấy
+                </div>
+                <div class="feature-item">
+                    <i>✓</i> Theo dõi điều kiện môi trường
+                </div>
+                <div class="feature-item">
+                    <i>✓</i> Ghi chép nhật ký
+                </div>
+                <div class="feature-item">
+                    <i>✓</i> Báo cáo và thống kê
+                </div>
+            </div>
+            
+            <p>
+                Nếu bạn cần hỗ trợ hoặc có bất kỳ câu hỏi nào, vui lòng liên hệ với 
+                quản trị viên hoặc truy cập trang trợ giúp của chúng tôi.
+            </p>
+        </div>
+        <div class="footer">
+            <p>
+                Email này được gửi tự động. Vui lòng không trả lời email này.<br>
+                © 2024 Hệ thống Quản lý Nuôi Cấy Mô. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

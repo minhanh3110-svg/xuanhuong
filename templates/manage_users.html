@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="fw-bold text-primary mb-0">
+                <i class="fas fa-users me-2"></i>Quản lý người dùng
+            </h2>
+        </div>
+    </div>
+
+    <!-- Thanh tìm kiếm và lọc -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control" 
+                               name="search" 
+                               value="{{ request.args.get('search', '') }}"
+                               placeholder="Tìm kiếm theo tên, email...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" name="role">
+                        <option value="">Tất cả vai trò</option>
+                        <option value="admin" {% if request.args.get('role') == 'admin' %}selected{% endif %}>Admin</option>
+                        <option value="manager" {% if request.args.get('role') == 'manager' %}selected{% endif %}>Quản lý</option>
+                        <option value="researcher" {% if request.args.get('role') == 'researcher' %}selected{% endif %}>Nghiên cứu viên</option>
+                        <option value="user" {% if request.args.get('role') == 'user' %}selected{% endif %}>Người dùng</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Lọc
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách người dùng -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0 px-4">Người dùng</th>
+                            <th class="border-0">Email</th>
+                            <th class="border-0">Vai trò</th>
+                            <th class="border-0">Phòng ban</th>
+                            <th class="border-0">Trạng thái</th>
+                            <th class="border-0">Ngày tạo</th>
+                            <th class="border-0 text-end px-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users.items %}
+                        <tr>
+                            <td class="px-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px;">
+                                        {% if user.avatar_url %}
+                                        <img src="{{ user.avatar_url }}" 
+                                             class="rounded-circle" 
+                                             style="width: 40px; height: 40px; object-fit: cover;">
+                                        {% else %}
+                                        <i class="fas fa-user text-primary"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="ms-3">
+                                        <h6 class="fw-bold mb-1">{{ user.full_name }}</h6>
+                                        <small class="text-muted">{{ user.username }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'primary' if user.role == 'manager' else 'success' if user.role == 'researcher' else 'secondary' }}">
+                                    {{ user.role }}
+                                </span>
+                            </td>
+                            <td>{{ user.department or 'Chưa cập nhật' }}</td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check-circle me-1"></i>Đã kích hoạt
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-clock me-1"></i>Chờ xác nhận
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td class="text-end px-4">
+                                <a href="{{ url_for('auth.edit_user', user_id=user.id) }}" 
+                                   class="btn btn-sm btn-outline-primary me-2">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if user.id != current_user.id %}
+                                <a href="{{ url_for('auth.delete_user', user_id=user.id) }}" 
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Bạn có chắc chắn muốn xóa người dùng này?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Phân trang -->
+            {% if users.pages > 1 %}
+            <div class="d-flex justify-content-center py-3 border-top">
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item {{ 'disabled' if not users.has_prev }}">
+                            <a class="page-link" 
+                               href="{{ url_for('auth.manage_users', page=users.prev_num, search=request.args.get('search', ''), role=request.args.get('role', '')) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        
+                        {% for page in users.iter_pages() %}
+                            {% if page %}
+                                <li class="page-item {{ 'active' if page == users.page }}">
+                                    <a class="page-link" 
+                                       href="{{ url_for('auth.manage_users', page=page, search=request.args.get('search', ''), role=request.args.get('role', '')) }}">
+                                        {{ page }}
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <li class="page-item {{ 'disabled' if not users.has_next }}">
+                            <a class="page-link" 
+                               href="{{ url_for('auth.manage_users', page=users.next_num, search=request.args.get('search', ''), role=request.args.get('role', '')) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

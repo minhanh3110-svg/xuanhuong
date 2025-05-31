@@ -12,3 +12,11 @@ Flask-Migrate==4.0.5
 psycopg2-binary==2.9.7 
 flask_login
 flask-principal
+Flask
+Flask-Login
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-Principal
+openpyxl
+pandas
+reportlab

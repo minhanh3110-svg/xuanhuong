@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import func
 import os
 import logging
@@ -15,6 +15,7 @@ import io
 import base64
 from itsdangerous import URLSafeTimedSerializer as Serializer
 from flask_mail import Mail, Message
+import secrets
 
 # Cấu hình logging
 if not os.path.exists('logs'):
@@ -81,6 +82,12 @@ class User(UserMixin, db.Model):
     otp_secret = db.Column(db.String(32))
     otp_enabled = db.Column(db.Boolean, default=False)
     notifications = db.relationship('Notification', backref='user', lazy=True)
+    activities = db.relationship('UserActivity', backref='user', lazy=True)
+    phone = db.Column(db.String(20))
+    address = db.Column(db.String(200))
+    avatar_url = db.Column(db.String(200))
+    reset_password_token = db.Column(db.String(100), unique=True)
+    reset_password_expires = db.Column(db.DateTime)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -123,6 +130,55 @@ class User(UserMixin, db.Model):
         except:
             return None
         return User.query.get(data['user_id'])
+
+    def generate_reset_token(self):
+        self.reset_password_token = secrets.token_urlsafe(32)
+        self.reset_password_expires = datetime.utcnow() + timedelta(hours=1)
+        db.session.commit()
+        return self.reset_password_token
+
+    def verify_reset_token(self):
+        if not self.reset_password_token or not self.reset_password_expires:
+            return False
+        if datetime.utcnow() > self.reset_password_expires:
+            return False
+        return True
+
+    def clear_reset_token(self):
+        self.reset_password_token = None
+        self.reset_password_expires = None
+        db.session.commit()
+
+    def log_activity(self, action, details=None):
+        activity = UserActivity(
+            user_id=self.id,
+            action=action,
+            details=details,
+            ip_address=request.remote_addr
+        )
+        db.session.add(activity)
+        db.session.commit()
+
+class UserActivity(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    action = db.Column(db.String(100), nullable=False)
+    details = db.Column(db.Text)
+    ip_address = db.Column(db.String(45))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def action_text(self):
+        actions = {
+            'login': 'Đăng nhập',
+            'logout': 'Đăng xuất',
+            'profile_update': 'Cập nhật thông tin',
+            'password_change': 'Đổi mật khẩu',
+            'password_reset': 'Khôi phục mật khẩu',
+            '2fa_enable': 'Bật xác thực 2 lớp',
+            '2fa_disable': 'Tắt xác thực 2 lớp'
+        }
+        return actions.get(self.action, self.action)
 
 class Mau(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Tài khoản đã được kích hoạt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Tài khoản đã được kích hoạt</h2>
+    </div>
+    
+    <div class="content">
+        <p>Xin chào {{ user.full_name }},</p>
+        
+        <p>Chúng tôi vui mừng thông báo rằng tài khoản của bạn trên hệ thống Quản lý Nuôi Cấy Mô đã được kích hoạt thành công.</p>
+        
+        <p>Bạn có thể đăng nhập ngay bây giờ bằng tài khoản:</p>
+        <ul>
+            <li><strong>Tên đăng nhập:</strong> {{ user.username }}</li>
+            <li><strong>Email:</strong> {{ user.email }}</li>
+        </ul>
+        
+        <p style="text-align: center;">
+            <a href="{{ url_for('auth.login', _external=True) }}" class="button">Đăng nhập</a>
+        </p>
+        
+        <p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ với quản trị viên hệ thống.</p>
+    </div>
+    
+    <div class="footer">
+        <p>Email này được gửi tự động. Vui lòng không trả lời email này.</p>
+        <p>&copy; 2024 Hệ thống Quản lý Nuôi Cấy Mô. All rights reserved.</p>
+    </div>
+</body>
+</html>

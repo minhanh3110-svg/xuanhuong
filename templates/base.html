@@ -3,97 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{% endblock %} - Quản Lý Nuôi Cấy Mô</title>
+    <title>{% block title %}Quản lý nuôi cấy mô{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-white">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg {{ 'navbar-dark bg-dark' if session.get('theme') == 'dark' else 'navbar-light bg-light' }}">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
-                <div class="logo-wrapper">
-                    <div class="logo-container">
-                        <div class="logo-circle">
-                            <div class="logo-f"></div>
-                            <div class="logo-g"></div>
-                            <div class="logo-dot"></div>
-                            <div class="logo-ring"></div>
-                        </div>
-                    </div>
-                    <div class="brand-text-container">
-                        <span class="brand-text">Green Straw Hat</span>
-                        <span class="tagline">Happiness Together</span>
-                    </div>
-                </div>
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-leaf"></i> Nuôi cấy mô
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                {% if current_user.is_authenticated %}
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('index') }}">
-                            <i class="fas fa-home"></i> Trang Chủ
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('them_mau') }}">
-                            <i class="fas fa-plus"></i> Thêm Mẫu Mới
+                            <i class="fas fa-home"></i> Trang chủ
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('phong_moi_truong') }}">
-                            <i class="fas fa-flask"></i> Phòng Môi Trường
+                            <i class="fas fa-temperature-high"></i> Phòng môi trường
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('them_phong_moi') }}">
-                            <i class="fas fa-door-open"></i> Thêm Phòng Mới
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('xuat_excel') }}">📥 Xuất Excel</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('xuat_pdf') }}">📄 Xuất PDF</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('toggle_theme') }}">
-                            🌗 Đổi Giao Diện
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">🚪 Đăng Xuất</a>
                     </li>
                 </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('xuat_excel') }}" title="Xuất Excel">
+                            <i class="fas fa-file-excel"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="theme-toggle" title="{{ 'Giao diện sáng' if session.get('theme') == 'dark' else 'Giao diện tối' }}">
+                            <i class="fas {{ 'fa-sun' if session.get('theme') == 'dark' else 'fa-moon' }}"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}" title="Đăng xuất">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                    </li>
+                </ul>
+                {% endif %}
             </div>
         </div>
     </nav>
 
-    <div class="container my-4">
+    <!-- Main content -->
+    <main class="flex-grow-1 py-4">
         {% block content %}{% endblock %}
-    </div>
+    </main>
 
+    <!-- Footer -->
+    <footer class="py-3 mt-auto {{ 'bg-dark text-light' if session.get('theme') == 'dark' else 'bg-light text-dark' }}">
+        <div class="container text-center">
+            <small>&copy; 2024 Quản lý nuôi cấy mô. All rights reserved.</small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.js"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    {% block scripts %}{% endblock %}
-
+    
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        showToast('{{ category }}', '{{ message }}');
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+    // Áp dụng theme
+    function applyTheme(theme) {
+        const isDark = theme === 'dark';
+        document.body.style.backgroundColor = isDark ? 'var(--bs-dark)' : 'var(--bs-light)';
+        document.body.style.color = isDark ? 'var(--bs-light)' : 'var(--bs-dark)';
+        
+        // Navbar
+        document.querySelector('.navbar').style.backgroundColor = isDark ? 'var(--bs-dark)' : 'var(--bs-white)';
+        document.querySelector('.navbar').style.borderBottomColor = isDark ? 'var(--bs-gray-700)' : 'var(--bs-gray-200)';
+        
+        // Cards
+        document.querySelectorAll('.card').forEach(card => {
+            card.style.backgroundColor = isDark ? 'var(--bs-gray-800)' : 'var(--bs-white)';
+            card.style.borderColor = isDark ? 'var(--bs-gray-700)' : 'var(--bs-gray-200)';
+            card.style.color = isDark ? 'var(--bs-light)' : 'var(--bs-dark)';
         });
+        
+        // Card headers
+        document.querySelectorAll('.card-header').forEach(header => {
+            header.style.backgroundColor = isDark ? 'var(--bs-gray-900)' : 'var(--bs-gray-100)';
+            header.style.borderBottomColor = isDark ? 'var(--bs-gray-700)' : 'var(--bs-gray-200)';
+        });
+        
+        // Form controls
+        document.querySelectorAll('.form-control').forEach(control => {
+            control.style.backgroundColor = isDark ? 'var(--bs-gray-700)' : 'var(--bs-white)';
+            control.style.borderColor = isDark ? 'var(--bs-gray-600)' : 'var(--bs-gray-300)';
+            control.style.color = isDark ? 'var(--bs-light)' : 'var(--bs-dark)';
+        });
+    }
+
+    // Khởi tạo theme
+    document.addEventListener('DOMContentLoaded', function() {
+        applyTheme('{{ session.get('theme', 'light') }}');
+        
+        // Xử lý sự kiện chuyển đổi theme
+        document.getElementById('theme-toggle').addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch('/toggle-theme')
+                .then(response => response.text())
+                .then(() => window.location.reload());
+        });
+    });
     </script>
+
+    {% block scripts %}{% endblock %}
 </body>
-</html>
+</html> 

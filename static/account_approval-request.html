@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yêu cầu phê duyệt tài khoản mới</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #0d6efd;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #ffffff;
+            padding: 30px;
+            border: 1px solid #dddddd;
+            border-radius: 0 0 5px 5px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        .button-approve {
+            background-color: #198754;
+            color: #ffffff;
+        }
+        .button-reject {
+            background-color: #dc3545;
+            color: #ffffff;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666666;
+            font-size: 12px;
+        }
+        .user-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .user-info table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .user-info th {
+            text-align: left;
+            padding: 8px;
+            width: 30%;
+            color: #666666;
+        }
+        .user-info td {
+            padding: 8px;
+        }
+        .user-info tr:not(:last-child) {
+            border-bottom: 1px solid #dddddd;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100%;
+                padding: 10px;
+            }
+            .button {
+                display: block;
+                margin: 10px 0;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Yêu cầu phê duyệt tài khoản mới</h1>
+        </div>
+        <div class="content">
+            <p>Xin chào Quản trị viên,</p>
+            
+            <p>
+                Có một yêu cầu đăng ký tài khoản mới cần được phê duyệt trên 
+                Hệ thống Quản lý Nuôi Cấy Mô.
+            </p>
+            
+            <div class="user-info">
+                <h3>Thông tin người dùng:</h3>
+                <table>
+                    <tr>
+                        <th>Họ và tên</th>
+                        <td>{{ user.full_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Tên đăng nhập</th>
+                        <td>{{ user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phòng ban</th>
+                        <td>{{ user.department or 'Chưa cập nhật' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Chức vụ</th>
+                        <td>{{ user.position or 'Chưa cập nhật' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Thời gian đăng ký</th>
+                        <td>{{ user.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <p>Vui lòng xem xét và thực hiện hành động phù hợp:</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ approve_url }}" class="button button-approve">
+                    <i>✓</i> Phê duyệt
+                </a>
+                <a href="{{ reject_url }}" class="button button-reject">
+                    <i>✕</i> Từ chối
+                </a>
+            </div>
+            
+            <p>
+                <strong>Lưu ý:</strong> Sau khi phê duyệt, người dùng sẽ nhận được email 
+                thông báo và có thể bắt đầu sử dụng hệ thống.
+            </p>
+        </div>
+        <div class="footer">
+            <p>
+                Email này được gửi tự động. Vui lòng không trả lời email này.<br>
+                © 2024 Hệ thống Quản lý Nuôi Cấy Mô. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

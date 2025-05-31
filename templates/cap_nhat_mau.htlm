@@ -11,57 +11,22 @@
                     <h4 class="mb-0">Cập nhật thông tin mẫu</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('cap_nhat_mau', id=mau.id) }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ url_for('mau.cap_nhat_mau', id=mau.id) }}" 
+                          enctype="multipart/form-data">
                         {{ form.csrf_token }}
                         
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Mã mẫu</label>
-                                <input type="text" class="form-control" value="{{ mau.ma_mau }}" readonly>
-                            </div>
-                            <div class="col-md-6">
                                 <label class="form-label">Tên mẫu <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="ten" 
                                        value="{{ mau.ten }}" required>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Phòng nuôi cấy <span class="text-danger">*</span></label>
-                                <select class="form-select" name="phong_id" required>
-                                    {% for phong in phong_list %}
-                                    <option value="{{ phong.id }}" 
-                                            {% if phong.id == mau.phong_id %}selected{% endif %}>
-                                        {{ phong.ten }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
+                                <div class="form-text">Nhập tên mẫu để dễ dàng phân biệt</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Trạng thái</label>
-                                <select class="form-select" name="trang_thai">
-                                    <option value="Mới tạo" 
-                                            {% if mau.trang_thai == 'Mới tạo' %}selected{% endif %}>
-                                        Mới tạo
-                                    </option>
-                                    <option value="Đang phát triển"
-                                            {% if mau.trang_thai == 'Đang phát triển' %}selected{% endif %}>
-                                        Đang phát triển
-                                    </option>
-                                    <option value="Cần chăm sóc"
-                                            {% if mau.trang_thai == 'Cần chăm sóc' %}selected{% endif %}>
-                                        Cần chăm sóc
-                                    </option>
-                                    <option value="Đã hoàn thành"
-                                            {% if mau.trang_thai == 'Đã hoàn thành' %}selected{% endif %}>
-                                        Đã hoàn thành
-                                    </option>
-                                    <option value="Thất bại"
-                                            {% if mau.trang_thai == 'Thất bại' %}selected{% endif %}>
-                                        Thất bại
-                                    </option>
-                                </select>
+                                <label class="form-label">Mã mẫu</label>
+                                <input type="text" class="form-control" name="ma_mau" 
+                                       value="{{ mau.ma_mau }}" readonly>
+                                <div class="form-text">Mã mẫu không thể thay đổi</div>
                             </div>
                         </div>
                         
@@ -71,11 +36,72 @@
                             <div class="form-text">Mô tả chi tiết về mẫu nuôi cấy</div>
                         </div>
                         
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Phòng nuôi cấy <span class="text-danger">*</span></label>
+                                <select class="form-select" name="phong_id" required>
+                                    {% for phong in phong_list %}
+                                    <option value="{{ phong.id }}" 
+                                            {% if phong.id == mau.phong_id %}selected{% endif %}
+                                            {% if phong.trang_thai != 'Hoạt động' and phong.id != mau.phong_id %}disabled{% endif %}>
+                                        {{ phong.ten }}
+                                        {% if phong.trang_thai != 'Hoạt động' %}
+                                        ({{ phong.trang_thai }})
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Chọn phòng để nuôi cấy mẫu</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Ngày cấy <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" name="ngay_cay" 
+                                       value="{{ mau.ngay_cay.strftime('%Y-%m-%d') }}" required>
+                                <div class="form-text">Ngày bắt đầu nuôi cấy mẫu</div>
+                            </div>
+                        </div>
+                        
                         <div class="mb-3">
-                            <label class="form-label">Ghi chú cập nhật</label>
+                            <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+                            <select class="form-select" name="trang_thai" required>
+                                <option value="Mới tạo" 
+                                        {% if mau.trang_thai == 'Mới tạo' %}selected{% endif %}>
+                                    Mới tạo
+                                </option>
+                                <option value="Đang phát triển"
+                                        {% if mau.trang_thai == 'Đang phát triển' %}selected{% endif %}>
+                                    Đang phát triển
+                                </option>
+                                <option value="Cần chăm sóc"
+                                        {% if mau.trang_thai == 'Cần chăm sóc' %}selected{% endif %}>
+                                    Cần chăm sóc
+                                </option>
+                                <option value="Đã hoàn thành"
+                                        {% if mau.trang_thai == 'Đã hoàn thành' %}selected{% endif %}>
+                                    Đã hoàn thành
+                                </option>
+                                <option value="Thất bại"
+                                        {% if mau.trang_thai == 'Thất bại' %}selected{% endif %}>
+                                    Thất bại
+                                </option>
+                            </select>
+                            <div class="form-text">Trạng thái hiện tại của mẫu</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Thêm hình ảnh</label>
+                            <input type="file" class="form-control" name="hinh_anh" 
+                                   accept="image/*" multiple>
+                            <div class="form-text">
+                                Có thể chọn nhiều ảnh. Định dạng: JPG, PNG. Tối đa: 5MB/ảnh
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Ghi chú</label>
                             <textarea class="form-control" name="ghi_chu" rows="2"></textarea>
                             <div class="form-text">
-                                Ghi chú này sẽ được lưu vào nhật ký như một bản ghi mới
+                                Ghi chú này sẽ được thêm vào nhật ký theo dõi
                             </div>
                         </div>
                         
@@ -83,7 +109,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save me-2"></i>Lưu thay đổi
                             </button>
-                            <a href="{{ url_for('chi_tiet_mau', id=mau.id) }}" 
+                            <a href="{{ url_for('mau.chi_tiet_mau', id=mau.id) }}" 
                                class="btn btn-outline-secondary">
                                 <i class="fas fa-times me-2"></i>Hủy
                             </a>
@@ -92,75 +118,33 @@
                 </div>
             </div>
             
-            <!-- Danh sách hình ảnh -->
+            <!-- Hình ảnh hiện tại -->
+            {% if mau.hinh_anh %}
             <div class="card mt-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Hình ảnh</h5>
-                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" 
-                            data-bs-target="#addImageModal">
-                        <i class="fas fa-upload me-2"></i>Thêm ảnh
-                    </button>
+                <div class="card-header">
+                    <h5 class="mb-0">Hình ảnh hiện tại</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row g-3">
-                        {% for hinh in mau.hinh_anh %}
+                    <div class="row g-2">
+                        {% for hinh_anh in mau.hinh_anh %}
                         <div class="col-md-4">
                             <div class="position-relative">
-                                <img src="{{ hinh.url }}" class="img-fluid rounded" 
-                                     alt="{{ hinh.mo_ta or 'Hình ảnh mẫu' }}">
+                                <img src="{{ hinh_anh.url }}" class="img-fluid rounded" 
+                                     alt="{{ mau.ten }}">
                                 <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2"
-                                        onclick="deleteImage({{ hinh.id }})">
+                                        onclick="confirmDeleteImage({{ hinh_anh.id }})">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
-                            <div class="mt-2">
-                                <input type="text" class="form-control form-control-sm" 
-                                       value="{{ hinh.mo_ta }}" placeholder="Mô tả ảnh"
-                                       onchange="updateImageDescription({{ hinh.id }}, this.value)">
-                            </div>
-                        </div>
-                        {% else %}
-                        <div class="col-12 text-center text-muted">
-                            <p class="mb-0">Chưa có hình ảnh nào</p>
+                            {% if hinh_anh.mo_ta %}
+                            <div class="text-muted small mt-1">{{ hinh_anh.mo_ta }}</div>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal thêm hình ảnh -->
-<div class="modal fade" id="addImageModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('them_hinh_anh', mau_id=mau.id) }}" 
-                  enctype="multipart/form-data">
-                {{ form.csrf_token }}
-                <div class="modal-header">
-                    <h5 class="modal-title">Thêm hình ảnh mới</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Chọn ảnh <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control" name="hinh_anh" 
-                               accept="image/*" multiple required>
-                        <div class="form-text">
-                            Có thể chọn nhiều ảnh. Định dạng: JPG, PNG. Tối đa: 5MB/ảnh
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Mô tả</label>
-                        <input type="text" class="form-control" name="mo_ta">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">Tải lên</button>
-                </div>
-            </form>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -181,41 +165,26 @@ document.querySelector('input[name="hinh_anh"]').addEventListener('change', func
     }
 });
 
-// Xóa hình ảnh
-function deleteImage(imageId) {
-    if (confirm('Bạn có chắc chắn muốn xóa ảnh này?')) {
-        fetch(`/api/xoa-hinh-anh/${imageId}`, {
-            method: 'DELETE'
-        }).then(response => {
-            if (response.ok) {
-                window.location.reload();
-            } else {
-                alert('Có lỗi xảy ra khi xóa ảnh');
-            }
-        });
+// Xác nhận xóa hình ảnh
+function confirmDeleteImage(imageId) {
+    if (confirm('Bạn có chắc chắn muốn xóa hình ảnh này? Hành động này không thể hoàn tác.')) {
+        window.location.href = `/xoa-hinh-anh/${imageId}`;
     }
 }
 
-// Cập nhật mô tả ảnh
-function updateImageDescription(imageId, description) {
-    fetch(`/api/cap-nhat-mo-ta-anh/${imageId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ mo_ta: description })
-    }).then(response => {
-        if (!response.ok) {
-            alert('Có lỗi xảy ra khi cập nhật mô tả');
+// Xác nhận trước khi hủy
+document.querySelector('a.btn-outline-secondary').addEventListener('click', function(e) {
+    const form = document.querySelector('form');
+    if (form.ten.value !== '{{ mau.ten }}' || 
+        form.mo_ta.value !== '{{ mau.mo_ta }}' || 
+        form.phong_id.value !== '{{ mau.phong_id }}' ||
+        form.ngay_cay.value !== '{{ mau.ngay_cay.strftime("%Y-%m-%d") }}' ||
+        form.trang_thai.value !== '{{ mau.trang_thai }}' ||
+        form.hinh_anh.files.length > 0 ||
+        form.ghi_chu.value) {
+        if (!confirm('Bạn có chắc chắn muốn hủy? Mọi thay đổi sẽ không được lưu.')) {
+            e.preventDefault();
         }
-    });
-}
-
-// Xác nhận trước khi thay đổi trạng thái
-document.querySelector('select[name="trang_thai"]').addEventListener('change', function(e) {
-    const newStatus = e.target.value;
-    if (newStatus === 'Thất bại' && !confirm('Bạn có chắc chắn muốn đánh dấu mẫu này là thất bại?')) {
-        e.target.value = '{{ mau.trang_thai }}';
     }
 });
 </script>

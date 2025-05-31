@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Danh sách mẫu - Quản Lý Cấy Mô{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Danh sách mẫu nuôi cấy</h4>
+        <a href="{{ url_for('mau.them_mau_moi') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Thêm mẫu mới
+        </a>
+    </div>
+
+    <!-- Bộ lọc -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tìm kiếm</label>
+                    <input type="text" class="form-control" name="search" 
+                           value="{{ request.args.get('search', '') }}"
+                           placeholder="Tên hoặc mã mẫu...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Phòng</label>
+                    <select class="form-select" name="phong">
+                        <option value="">Tất cả phòng</option>
+                        {% for phong in phong_list %}
+                        <option value="{{ phong.id }}" 
+                                {% if request.args.get('phong')|int == phong.id %}selected{% endif %}>
+                            {{ phong.ten }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Trạng thái</label>
+                    <select class="form-select" name="trang_thai">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="Mới tạo" 
+                                {% if request.args.get('trang_thai') == 'Mới tạo' %}selected{% endif %}>
+                            Mới tạo
+                        </option>
+                        <option value="Đang phát triển"
+                                {% if request.args.get('trang_thai') == 'Đang phát triển' %}selected{% endif %}>
+                            Đang phát triển
+                        </option>
+                        <option value="Cần chăm sóc"
+                                {% if request.args.get('trang_thai') == 'Cần chăm sóc' %}selected{% endif %}>
+                            Cần chăm sóc
+                        </option>
+                        <option value="Đã hoàn thành"
+                                {% if request.args.get('trang_thai') == 'Đã hoàn thành' %}selected{% endif %}>
+                            Đã hoàn thành
+                        </option>
+                        <option value="Thất bại"
+                                {% if request.args.get('trang_thai') == 'Thất bại' %}selected{% endif %}>
+                            Thất bại
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Sắp xếp</label>
+                    <select class="form-select" name="sort">
+                        <option value="ngay_cay_desc" 
+                                {% if request.args.get('sort') == 'ngay_cay_desc' %}selected{% endif %}>
+                            Mới nhất trước
+                        </option>
+                        <option value="ngay_cay_asc"
+                                {% if request.args.get('sort') == 'ngay_cay_asc' %}selected{% endif %}>
+                            Cũ nhất trước
+                        </option>
+                        <option value="ten_asc"
+                                {% if request.args.get('sort') == 'ten_asc' %}selected{% endif %}>
+                            Tên A-Z
+                        </option>
+                        <option value="ten_desc"
+                                {% if request.args.get('sort') == 'ten_desc' %}selected{% endif %}>
+                            Tên Z-A
+                        </option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-2"></i>Lọc
+                    </button>
+                    <a href="{{ url_for('mau.danh_sach_mau') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Xóa bộ lọc
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách mẫu -->
+    <div class="row g-4">
+        {% for mau in mau_list %}
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ mau.ten }}</h5>
+                    <span class="badge bg-{{ mau.trang_thai | status_color }}">
+                        {{ mau.trang_thai }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            {% if mau.hinh_anh %}
+                            <img src="{{ mau.hinh_anh[0].url }}" 
+                                 class="img-fluid rounded" 
+                                 alt="{{ mau.ten }}">
+                            {% else %}
+                            <div class="text-center text-muted p-3 border rounded">
+                                <i class="fas fa-image fa-3x mb-2"></i>
+                                <p class="mb-0">Chưa có hình ảnh</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <th class="ps-0">Mã mẫu:</th>
+                                    <td>{{ mau.ma_mau }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-0">Phòng:</th>
+                                    <td>{{ mau.phong.ten }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-0">Ngày cấy:</th>
+                                    <td>{{ mau.ngay_cay.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="ps-0">Tuổi mẫu:</th>
+                                    <td>{{ mau.tuoi }} ngày</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if mau.mo_ta %}
+                    <div class="mt-3">
+                        <h6>Mô tả:</h6>
+                        <p class="mb-0">{{ mau.mo_ta | truncate(100) }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-3">
+                        <h6>Thông tin môi trường:</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-temperature-high text-primary me-2"></i>
+                                    <span>{{ mau.phong.nhiet_do }}°C</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-tint text-info me-2"></i>
+                                    <span>{{ mau.phong.do_am }}%</span>
+                                </div>
+                            </div>
+                            {% if mau.phong.anh_sang %}
+                            <div class="col-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-sun text-warning me-2"></i>
+                                    <span>{{ mau.phong.anh_sang }} lux</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if mau.phong.co2 %}
+                            <div class="col-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-wind text-success me-2"></i>
+                                    <span>{{ mau.phong.co2 }} ppm</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('mau.chi_tiet_mau', id=mau.id) }}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye me-2"></i>Chi tiết
+                        </a>
+                        <div>
+                            <a href="{{ url_for('mau.cap_nhat_mau', id=mau.id) }}" 
+                               class="btn btn-outline-secondary btn-sm me-2">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if current_user.role == 'admin' %}
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                    onclick="confirmDelete({{ mau.id }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="text-center text-muted">
+                <p class="mb-0">Không tìm thấy mẫu nào</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Phân trang -->
+    {% if pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {{ 'disabled' if page == 1 }}">
+                <a class="page-link" href="{{ url_for('mau.danh_sach_mau', page=page-1, **request.args) }}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% for p in range(1, pages + 1) %}
+            <li class="page-item {{ 'active' if p == page }}">
+                <a class="page-link" href="{{ url_for('mau.danh_sach_mau', page=p, **request.args) }}">
+                    {{ p }}
+                </a>
+            </li>
+            {% endfor %}
+            <li class="page-item {{ 'disabled' if page == pages }}">
+                <a class="page-link" href="{{ url_for('mau.danh_sach_mau', page=page+1, **request.args) }}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+{% block scripts %}
+<script>
+// Xác nhận xóa mẫu
+function confirmDelete(mauId) {
+    if (confirm('Bạn có chắc chắn muốn xóa mẫu này? Hành động này không thể hoàn tác.')) {
+        window.location.href = `/xoa-mau/${mauId}`;
+    }
+}
+
+// Tự động submit form khi thay đổi select
+document.querySelectorAll('select').forEach(select => {
+    select.addEventListener('change', function() {
+        this.form.submit();
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

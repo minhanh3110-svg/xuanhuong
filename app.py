@@ -17,6 +17,8 @@ from itsdangerous import URLSafeTimedSerializer as Serializer
 from flask_mail import Mail, Message
 import secrets
 from dotenv import load_dotenv
+from flask import Blueprint
+from functools import wraps
 
 # Load environment variables
 load_dotenv()

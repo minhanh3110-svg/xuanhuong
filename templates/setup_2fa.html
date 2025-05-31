@@ -1,70 +1,44 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">Cài Đặt Xác Thực 2 Lớp (2FA)</h4>
-                </div>
-                <div class="card-body">
-                    {% if current_user.otp_enabled %}
-                        <div class="alert alert-success">
-                            <i class="fas fa-shield-alt"></i> Xác thực 2 lớp đang được bật
-                        </div>
-                        
-                        <form action="{{ url_for('disable_2fa') }}" method="post" class="mt-4">
-                            <div class="mb-3">
-                                <label for="otp_code" class="form-label">Nhập mã OTP để tắt 2FA:</label>
-                                <input type="text" class="form-control" id="otp_code" name="otp_code" required>
-                            </div>
-                            <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-toggle-off"></i> Tắt xác thực 2 lớp
-                            </button>
-                        </form>
-                    {% else %}
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i> Xác thực 2 lớp chưa được bật
-                        </div>
-
-                        <div class="text-center my-4">
-                            <p class="mb-3">1. Quét mã QR bên dưới bằng ứng dụng Google Authenticator:</p>
-                            <img src="data:image/png;base64,{{ qr_code }}" class="img-fluid mb-3" alt="QR Code">
-                            
-                            <p class="mb-3">2. Nhập mã OTP từ ứng dụng để xác nhận:</p>
-                        </div>
-
-                        <form action="{{ url_for('enable_2fa') }}" method="post">
-                            <div class="mb-3">
-                                <label for="otp_code" class="form-label">Mã OTP:</label>
-                                <input type="text" class="form-control" id="otp_code" name="otp_code" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-toggle-on"></i> Bật xác thực 2 lớp
-                            </button>
-                        </form>
-                    {% endif %}
-                </div>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Thiết lập xác thực hai lớp</h3>
             </div>
-
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Hướng Dẫn</h5>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <img src="data:image/png;base64,{{ qr_code }}" class="img-fluid" alt="QR Code">
+                    <p class="mt-3">
+                        <strong>Mã bí mật:</strong><br>
+                        <code>{{ secret_key }}</code>
+                    </p>
                 </div>
-                <div class="card-body">
-                    <ol>
-                        <li>Tải ứng dụng Google Authenticator:
-                            <ul>
-                                <li><a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank">Android</a></li>
-                                <li><a href="https://apps.apple.com/us/app/google-authenticator/id388497605" target="_blank">iOS</a></li>
-                            </ul>
-                        </li>
-                        <li>Mở ứng dụng và quét mã QR</li>
-                        <li>Nhập mã 6 số hiển thị trên ứng dụng để xác nhận</li>
-                        <li>Lưu ý: Hãy lưu lại mã dự phòng để phòng trường hợp mất điện thoại</li>
+                
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-info-circle"></i> Hướng dẫn</h5>
+                    <ol class="mb-0">
+                        <li>Tải ứng dụng Google Authenticator hoặc Authy trên điện thoại của bạn</li>
+                        <li>Quét mã QR hoặc nhập mã bí mật vào ứng dụng</li>
+                        <li>Nhập mã xác thực từ ứng dụng để hoàn tất thiết lập</li>
                     </ol>
                 </div>
+                
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="otp_code" class="form-label">Mã xác thực</label>
+                        <input type="text" class="form-control" id="otp_code" name="otp_code" 
+                               required autofocus placeholder="Nhập mã 6 số">
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Xác nhận</button>
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">
+                            Hủy
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{{ phong.ten_phong }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1 class="mb-4">{{ phong.ten_phong }}</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('cap_nhat_phong', id=phong.id) }}" class="btn btn-warning">Cập nhật thông số</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Thông số môi trường</h5>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h6>Nhiệt độ</h6>
+                        <h2>{{ phong.nhiet_do }}°C</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h6>Độ ẩm</h6>
+                        <h2>{{ phong.do_am }}%</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h6>Ánh sáng</h6>
+                        <h2>{{ phong.anh_sang }} lux</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Thông tin chung</h5>
+        <p><strong>Trạng thái:</strong> 
+            <span class="badge {% if phong.trang_thai == 'Hoạt động' %}bg-success{% else %}bg-danger{% endif %}">
+                {{ phong.trang_thai }}
+            </span>
+        </p>
+        <p><strong>Cập nhật lần cuối:</strong> {{ phong.cap_nhat.strftime('%d/%m/%Y %H:%M') }}</p>
+        <p><strong>Ghi chú:</strong> {{ phong.ghi_chu }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Mẫu cấy trong phòng</h5>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Tên mẫu</th>
+                        <th>Loại cây</th>
+                        <th>Ngày cấy</th>
+                        <th>Trạng thái</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mau in phong.mau_cay_mo %}
+                    <tr>
+                        <td>{{ mau.ten_mau }}</td>
+                        <td>{{ mau.loai_cay }}</td>
+                        <td>{{ mau.ngay_cay.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ mau.trang_thai }}</td>
+                        <td><a href="#" class="btn btn-sm btn-primary">Chi tiết</a></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">Chưa có mẫu cấy nào trong phòng này</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 

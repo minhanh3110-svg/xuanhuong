@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Chi Tiết Mẫu{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title d-flex justify-content-between align-items-center mb-4">
+                        {{ mau.ten }}
+                        <span class="badge bg-{{ mau.trang_thai|status_color }}">{{ mau.trang_thai }}</span>
+                    </h2>
+
+                    <div class="info-section mb-4">
+                        <h5>Thông tin cơ bản</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Mã mẫu:</strong> {{ mau.ma_mau }}</p>
+                                <p><strong>Ngày cấy:</strong> {{ mau.ngay_cay.strftime('%d/%m/%Y') }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Phòng:</strong> {{ mau.phong.ten }}</p>
+                                <p><strong>Trạng thái:</strong> {{ mau.trang_thai }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <p><strong>Mô tả:</strong></p>
+                                <p>{{ mau.mo_ta or 'Không có mô tả' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nhật-ky-section">
+                        <h5 class="mb-3">Nhật ký theo dõi</h5>
+                        
+                        <!-- Form thêm nhật ký -->
+                        <form action="{{ url_for('them_nhat_ky', mau_id=mau.id) }}" method="POST" class="mb-4">
+                            <div class="form-group">
+                                <textarea class="form-control" name="noi_dung" rows="3" placeholder="Nhập nội dung nhật ký..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-2">
+                                <i class="fas fa-plus"></i> Thêm nhật ký
+                            </button>
+                        </form>
+
+                        <!-- Danh sách nhật ký -->
+                        <div class="timeline">
+                            {% for nhat_ky in mau.nhat_ky|sort(attribute='ngay_ghi', reverse=true) %}
+                            <div class="timeline-item">
+                                <div class="timeline-date">
+                                    {{ nhat_ky.ngay_ghi.strftime('%d/%m/%Y %H:%M') }}
+                                </div>
+                                <div class="timeline-content">
+                                    {{ nhat_ky.noi_dung }}
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">Chưa có nhật ký nào.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="actions mt-4">
+                        <a href="{{ url_for('cap_nhat_mau', id=mau.id) }}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Cập nhật
+                        </a>
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete({{ mau.id }})">
+                            <i class="fas fa-trash"></i> Xóa
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Quay lại
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(id) {
+    if (confirm('Bạn có chắc chắn muốn xóa mẫu này không?')) {
+        window.location.href = `/xoa-mau/${id}`;
+    }
+}
+</script>
+{% endblock %} 

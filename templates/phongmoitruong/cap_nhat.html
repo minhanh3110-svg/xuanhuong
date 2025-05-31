@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Cập Nhật {{ phong.ten_phong }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Cập Nhật Thông Số - {{ phong.ten_phong }}</h1>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="nhiet_do" class="form-label">Nhiệt độ (°C)</label>
+                        <input type="number" step="0.1" class="form-control" id="nhiet_do" name="nhiet_do" 
+                               value="{{ phong.nhiet_do }}" required>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="do_am" class="form-label">Độ ẩm (%)</label>
+                        <input type="number" step="0.1" class="form-control" id="do_am" name="do_am" 
+                               value="{{ phong.do_am }}" required>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="anh_sang" class="form-label">Ánh sáng (lux)</label>
+                        <input type="number" step="0.1" class="form-control" id="anh_sang" name="anh_sang" 
+                               value="{{ phong.anh_sang }}" required>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="trang_thai" class="form-label">Trạng thái</label>
+                <select class="form-select" id="trang_thai" name="trang_thai" required>
+                    <option value="Hoạt động" {% if phong.trang_thai == 'Hoạt động' %}selected{% endif %}>Hoạt động</option>
+                    <option value="Bảo trì" {% if phong.trang_thai == 'Bảo trì' %}selected{% endif %}>Bảo trì</option>
+                    <option value="Ngưng hoạt động" {% if phong.trang_thai == 'Ngưng hoạt động' %}selected{% endif %}>Ngưng hoạt động</option>
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="ghi_chu" class="form-label">Ghi chú</label>
+                <textarea class="form-control" id="ghi_chu" name="ghi_chu" rows="3">{{ phong.ghi_chu }}</textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Cập nhật</button>
+            <a href="{{ url_for('chi_tiet_phong', id=phong.id) }}" class="btn btn-secondary">Hủy</a>
+        </form>
+    </div>
+</div>
+{% endblock %} 

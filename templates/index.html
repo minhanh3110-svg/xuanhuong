@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Trang Chủ{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>Danh Sách Mẫu Nuôi Cấy</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('them_mau') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Thêm Mẫu Mới
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    {% for mau in mau_cay_mo %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title">{{ mau.ten_mau }}</h5>
+                    <span class="badge {% if mau.trang_thai == 'Mới tạo' %}bg-info
+                                     {% elif mau.trang_thai == 'Đang phát triển' %}bg-primary
+                                     {% elif mau.trang_thai == 'Đã hoàn thành' %}bg-success
+                                     {% else %}bg-danger{% endif %}">
+                        {{ mau.trang_thai }}
+                    </span>
+                </div>
+                <h6 class="card-subtitle mb-2 text-muted">
+                    <i class="fas fa-leaf"></i> {{ mau.loai_cay }}
+                </h6>
+                <p class="card-text">{{ mau.mo_ta }}</p>
+                <div class="card-text small text-muted mb-3">
+                    <div><i class="fas fa-calendar"></i> Ngày cấy: {{ mau.ngay_cay.strftime('%d/%m/%Y') }}</div>
+                    {% if mau.phong %}
+                    <div><i class="fas fa-flask"></i> Phòng: {{ mau.phong.ten_phong }}</div>
+                    {% endif %}
+                </div>
+                <div class="card-actions">
+                    <a href="#" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-info-circle"></i> Chi tiết
+                    </a>
+                    <a href="#" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-edit"></i> Cập nhật
+                    </a>
+                    <a href="#" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-trash"></i> Xóa
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> Chưa có mẫu nuôi cấy nào. 
+            <a href="{{ url_for('them_mau') }}" class="alert-link">Thêm mẫu mới</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-chart-pie"></i> Thống kê trạng thái
+                </h5>
+                <div class="status-stats">
+                    <div class="status-item">
+                        <span class="badge bg-info">Mới tạo</span>
+                        <span class="count">{{ mau_cay_mo|selectattr('trang_thai', 'equalto', 'Mới tạo')|list|length }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="badge bg-primary">Đang phát triển</span>
+                        <span class="count">{{ mau_cay_mo|selectattr('trang_thai', 'equalto', 'Đang phát triển')|list|length }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="badge bg-success">Đã hoàn thành</span>
+                        <span class="count">{{ mau_cay_mo|selectattr('trang_thai', 'equalto', 'Đã hoàn thành')|list|length }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="badge bg-danger">Thất bại</span>
+                        <span class="count">{{ mau_cay_mo|selectattr('trang_thai', 'equalto', 'Thất bại')|list|length }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-flask"></i> Phân bố theo phòng
+                </h5>
+                <div class="room-stats">
+                    {% for mau in mau_cay_mo|groupby('phong.ten_phong') %}
+                    <div class="room-item">
+                        <span class="room-name">{{ mau.grouper or 'Chưa phân phòng' }}</span>
+                        <span class="count">{{ mau.list|length }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.status-stats, .room-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.status-item, .room-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.count {
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+.room-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.badge {
+    padding: 0.5em 1em;
+}
+</style>
+{% endblock %} 

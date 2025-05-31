@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Phòng Môi Trường{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Quản Lý Phòng Môi Trường</h2>
+    </div>
+</div>
+
+<div class="row">
+    {% for phong in phong_list %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ phong.ten_phong }}</h5>
+                <div class="mt-3">
+                    <p class="mb-2">
+                        <i class="fas fa-temperature-high text-danger"></i>
+                        Nhiệt độ: <span id="nhiet-do-{{ phong.id }}">{{ phong.nhiet_do|default('--', true) }}</span>°C
+                    </p>
+                    <p class="mb-2">
+                        <i class="fas fa-tint text-primary"></i>
+                        Độ ẩm: <span id="do-am-{{ phong.id }}">{{ phong.do_am|default('--', true) }}</span>%
+                    </p>
+                </div>
+                <div class="mt-4">
+                    <button class="btn btn-primary btn-sm me-2" onclick="capNhatMoiTruong({{ phong.id }})">
+                        <i class="fas fa-sync-alt"></i> Cập nhật
+                    </button>
+                    <a href="{{ url_for('nhat_ky_phong', phong_id=phong.id) }}" class="btn btn-info btn-sm">
+                        <i class="fas fa-book"></i> Nhật ký
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function capNhatMoiTruong(phongId) {
+    // Giả lập dữ liệu từ cảm biến
+    const nhietDo = (Math.random() * (30 - 20) + 20).toFixed(1);
+    const doAm = (Math.random() * (80 - 60) + 60).toFixed(1);
+    
+    fetch(`/api/cap-nhat-moi-truong/${phongId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            nhiet_do: nhietDo,
+            do_am: doAm
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            document.getElementById(`nhiet-do-${phongId}`).textContent = nhietDo;
+            document.getElementById(`do-am-${phongId}`).textContent = doAm;
+            showToast('success', 'Cập nhật thành công!');
+        } else {
+            showToast('error', 'Có lỗi xảy ra khi cập nhật.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Không thể kết nối với máy chủ.');
+    });
+}
+</script>
+{% endblock %} 

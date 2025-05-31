@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Thêm Phòng Môi Trường{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Thêm Phòng Môi Trường Mới</h1>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label for="ten_phong" class="form-label">Tên phòng</label>
+                <input type="text" class="form-control" id="ten_phong" name="ten_phong" required>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="nhiet_do" class="form-label">Nhiệt độ (°C)</label>
+                        <input type="number" step="0.1" class="form-control" id="nhiet_do" name="nhiet_do" required>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="do_am" class="form-label">Độ ẩm (%)</label>
+                        <input type="number" step="0.1" class="form-control" id="do_am" name="do_am" required>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="anh_sang" class="form-label">Ánh sáng (lux)</label>
+                        <input type="number" step="0.1" class="form-control" id="anh_sang" name="anh_sang" required>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="trang_thai" class="form-label">Trạng thái</label>
+                <select class="form-select" id="trang_thai" name="trang_thai" required>
+                    <option value="Hoạt động">Hoạt động</option>
+                    <option value="Bảo trì">Bảo trì</option>
+                    <option value="Ngưng hoạt động">Ngưng hoạt động</option>
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="ghi_chu" class="form-label">Ghi chú</label>
+                <textarea class="form-control" id="ghi_chu" name="ghi_chu" rows="3"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Thêm phòng</button>
+            <a href="{{ url_for('danh_sach_phong') }}" class="btn btn-secondary">Hủy</a>
+        </form>
+    </div>
+</div>
+{% endblock %} 

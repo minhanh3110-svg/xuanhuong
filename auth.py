@@ -1,11 +1,21 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash
 from datetime import datetime
-from app import db, User, mail
+from app import db, User, mail, UserActivity
 from flask_mail import Message
+from functools import wraps
 
 auth = Blueprint('auth', __name__)
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'admin':
+            flash('Bạn không có quyền truy cập trang này', 'error')
+            return redirect(url_for('auth.login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
@@ -80,6 +90,7 @@ def confirm_email(token):
     else:
         user.is_active = True
         db.session.commit()
+        user.log_activity('email_confirm', 'Xác nhận email thành công')
         flash('Xác nhận tài khoản thành công!', 'success')
     
     return redirect(url_for('auth.login'))
@@ -105,6 +116,7 @@ def login():
             user.last_login = datetime.utcnow()
             db.session.commit()
             
+            user.log_activity('login')
             next_page = request.args.get('next')
             return redirect(next_page or url_for('index'))
             
@@ -115,6 +127,7 @@ def login():
 @auth.route('/logout')
 @login_required
 def logout():
+    current_user.log_activity('logout')
     logout_user()
     flash('Đăng xuất thành công', 'success')
     return redirect(url_for('auth.login'))
@@ -123,6 +136,37 @@ def logout():
 @login_required
 def profile():
     return render_template('auth/profile.html')
+
+@auth.route('/edit-profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    if request.method == 'POST':
+        current_user.full_name = request.form.get('full_name')
+        current_user.department = request.form.get('department')
+        current_user.position = request.form.get('position')
+        current_user.phone = request.form.get('phone')
+        current_user.address = request.form.get('address')
+        
+        avatar_file = request.files.get('avatar')
+        if avatar_file:
+            # Xử lý upload avatar
+            pass
+        
+        try:
+            db.session.commit()
+            current_user.log_activity('profile_update')
+            flash('Cập nhật thông tin thành công', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+            
+        return redirect(url_for('auth.profile'))
+        
+    departments = ['Phòng Nghiên cứu', 'Phòng Thí nghiệm', 'Phòng Quản lý']
+    positions = ['Nghiên cứu viên', 'Kỹ thuật viên', 'Quản lý', 'Nhân viên']
+    return render_template('auth/edit_profile.html',
+                         departments=departments,
+                         positions=positions)
 
 @auth.route('/change-password', methods=['GET', 'POST'])
 @login_required
@@ -142,7 +186,151 @@ def change_password():
 
         current_user.set_password(new_password)
         db.session.commit()
+        current_user.log_activity('password_change')
         flash('Đổi mật khẩu thành công', 'success')
         return redirect(url_for('auth.profile'))
 
-    return render_template('auth/change_password.html') 
+    return render_template('auth/change_password.html')
+
+@auth.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            token = user.generate_reset_token()
+            reset_url = url_for('auth.reset_password', token=token, _external=True)
+            
+            msg = Message('Khôi phục mật khẩu',
+                        recipients=[user.email])
+            msg.html = render_template('email/reset_password.html',
+                                     user=user,
+                                     reset_url=reset_url)
+            mail.send(msg)
+            
+            flash('Hướng dẫn khôi phục mật khẩu đã được gửi đến email của bạn', 'success')
+            return redirect(url_for('auth.login'))
+            
+        flash('Không tìm thấy tài khoản với email này', 'error')
+        
+    return render_template('auth/forgot_password.html')
+
+@auth.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    user = User.query.filter_by(reset_password_token=token).first()
+    
+    if not user or not user.verify_reset_token():
+        flash('Link khôi phục mật khẩu không hợp lệ hoặc đã hết hạn', 'error')
+        return redirect(url_for('auth.forgot_password'))
+        
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if password != confirm_password:
+            flash('Mật khẩu không khớp', 'error')
+            return redirect(url_for('auth.reset_password', token=token))
+            
+        user.set_password(password)
+        user.clear_reset_token()
+        user.log_activity('password_reset')
+        flash('Đặt lại mật khẩu thành công', 'success')
+        return redirect(url_for('auth.login'))
+        
+    return render_template('auth/reset_password.html')
+
+@auth.route('/activity-log')
+@login_required
+def activity_log():
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    if current_user.role == 'admin':
+        activities = UserActivity.query
+    else:
+        activities = UserActivity.query.filter_by(user_id=current_user.id)
+        
+    activities = activities.order_by(UserActivity.timestamp.desc()).paginate(
+        page=page, per_page=per_page
+    )
+    
+    return render_template('auth/activity_log.html', activities=activities)
+
+@auth.route('/manage-users')
+@admin_required
+def manage_users():
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    search = request.args.get('search', '')
+    role = request.args.get('role', '')
+    
+    query = User.query
+    if search:
+        query = query.filter(
+            (User.username.ilike(f'%{search}%')) |
+            (User.email.ilike(f'%{search}%')) |
+            (User.full_name.ilike(f'%{search}%'))
+        )
+    if role:
+        query = query.filter_by(role=role)
+        
+    users = query.order_by(User.created_at.desc()).paginate(
+        page=page, per_page=per_page
+    )
+    
+    return render_template('auth/manage_users.html', users=users)
+
+@auth.route('/edit-user/<int:user_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    if request.method == 'POST':
+        user.full_name = request.form.get('full_name')
+        user.email = request.form.get('email')
+        user.department = request.form.get('department')
+        user.position = request.form.get('position')
+        user.role = request.form.get('role')
+        user.is_active = bool(request.form.get('is_active'))
+        
+        try:
+            db.session.commit()
+            current_user.log_activity('edit_user', f'Chỉnh sửa người dùng: {user.username}')
+            flash('Cập nhật thông tin người dùng thành công', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+            
+        return redirect(url_for('auth.manage_users'))
+        
+    departments = ['Phòng Nghiên cứu', 'Phòng Thí nghiệm', 'Phòng Quản lý']
+    positions = ['Nghiên cứu viên', 'Kỹ thuật viên', 'Quản lý', 'Nhân viên']
+    roles = ['admin', 'manager', 'researcher', 'user']
+    
+    return render_template('auth/edit_user.html',
+                         user=user,
+                         departments=departments,
+                         positions=positions,
+                         roles=roles)
+
+@auth.route('/delete-user/<int:user_id>')
+@admin_required
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    if user.id == current_user.id:
+        flash('Không thể xóa tài khoản của chính mình', 'error')
+        return redirect(url_for('auth.manage_users'))
+        
+    try:
+        username = user.username
+        db.session.delete(user)
+        db.session.commit()
+        current_user.log_activity('delete_user', f'Xóa người dùng: {username}')
+        flash('Xóa người dùng thành công', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+        
+    return redirect(url_for('auth.manage_users')) 

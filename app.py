@@ -392,6 +392,12 @@ def api_thong_ke_nang_suat():
         'data': [round((r.success / r.total * 100), 2) if r.total > 0 else 0 for r in success_rates]
     }
     return jsonify(stats)
+@app.route('/mau/<int:id>')
+@login_required
+def xem_mau(id):
+    mau = Mau.query.get_or_404(id)
+    nhat_ky_list = NhatKy.query.filter_by(mau_id=id).order_by(NhatKy.ngay_ghi.desc()).all()
+    return render_template('xem_mau.html', mau=mau, nhat_ky_list=nhat_ky_list, theme=session.get('theme', 'light'))
 
 # Khởi tạo database và tạo tài khoản admin
 def init_db():

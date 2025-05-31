@@ -1,211 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Trang chủ{% endblock %}
+{% block title %}Trang chủ - Quản Lý Cấy Mô{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <h5 class="card-title">Mới tạo</h5>
-                <p class="card-text display-6">{{ stats.new_count }}</p>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="display-4 mb-4">Chào mừng đến với Hệ thống Quản lý Cấy Mô</h1>
+            <p class="lead mb-4">Hệ thống quản lý hiện đại giúp theo dõi và quản lý quy trình cấy mô thực vật một cách hiệu quả.</p>
+            
+            {% if not current_user.is_authenticated %}
+            <div class="mt-4">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg mx-2">Đăng nhập</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-outline-primary btn-lg mx-2">Đăng ký</a>
             </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <h5 class="card-title">Đang phát triển</h5>
-                <p class="card-text display-6">{{ stats.developing_count }}</p>
+            {% else %}
+            <div class="mt-4">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg">Đi đến Dashboard</a>
             </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-dark">
-            <div class="card-body">
-                <h5 class="card-title">Đã hoàn thành</h5>
-                <p class="card-text display-6">{{ stats.completed_count }}</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-danger text-white">
-            <div class="card-body">
-                <h5 class="card-title">Thất bại</h5>
-                <p class="card-text display-6">{{ stats.failed_count }}</p>
-            </div>
+            {% endif %}
         </div>
     </div>
 </div>
-
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Thống kê trạng thái</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="statusChart"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Tỷ lệ thành công theo tháng</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="successRateChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Danh sách mẫu</h5>
-        <a href="{{ url_for('them_mau') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Thêm mẫu
-        </a>
-    </div>
-    <div class="card-body">
-        <form class="row g-3 mb-4">
-            <div class="col-md-4">
-                <input type="text" class="form-control" name="search" placeholder="Tìm kiếm..." value="{{ request.args.get('search', '') }}">
-            </div>
-            <div class="col-md-3">
-                <select class="form-select" name="status">
-                    <option value="">Tất cả trạng thái</option>
-                    <option value="Mới tạo" {% if request.args.get('status') == 'Mới tạo' %}selected{% endif %}>Mới tạo</option>
-                    <option value="Đang phát triển" {% if request.args.get('status') == 'Đang phát triển' %}selected{% endif %}>Đang phát triển</option>
-                    <option value="Đã hoàn thành" {% if request.args.get('status') == 'Đã hoàn thành' %}selected{% endif %}>Đã hoàn thành</option>
-                    <option value="Thất bại" {% if request.args.get('status') == 'Thất bại' %}selected{% endif %}>Thất bại</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <select class="form-select" name="room">
-                    <option value="">Tất cả phòng</option>
-                    {% for room in rooms %}
-                    <option value="{{ room.id }}" {% if request.args.get('room')|int == room.id %}selected{% endif %}>
-                        {{ room.ten_phong }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Lọc</button>
-            </div>
-        </form>
-
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Mã mẫu</th>
-                        <th>Tên mẫu</th>
-                        <th>Ngày cấy</th>
-                        <th>Trạng thái</th>
-                        <th>Phòng</th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for mau in mau_pagination.items %}
-                    <tr>
-                        <td>{{ mau.ma_mau }}</td>
-                        <td>{{ mau.ten_mau }}</td>
-                        <td>{{ mau.ngay_cay.strftime('%d/%m/%Y') }}</td>
-                        <td>
-                            <span class="badge bg-{{ mau.trang_thai|status_color }}">
-                                {{ mau.trang_thai }}
-                            </span>
-                        </td>
-                        <td>{{ mau.phong.ten_phong if mau.phong else '' }}</td>
-                        <td>
-                            <div class="btn-group">
-                                <a href="{{ url_for('them_nhat_ky', mau_id=mau.id) }}" class="btn btn-sm btn-info">
-                                    <i class="fas fa-book"></i>
-                                </a>
-                                <a href="{{ url_for('sua_mau', id=mau.id) }}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{{ url_for('xoa_mau', id=mau.id) }}" class="btn btn-sm btn-danger" 
-                                   onclick="return confirm('Bạn có chắc chắn muốn xóa mẫu này?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <nav>
-            <ul class="pagination justify-content-center">
-                {% for page in mau_pagination.iter_pages() %}
-                    {% if page %}
-                        <li class="page-item {{ 'active' if page == mau_pagination.page else '' }}">
-                            <a class="page-link" href="{{ url_for('index', page=page, **request.args) }}">{{ page }}</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">...</span>
-                        </li>
-                    {% endif %}
-                {% endfor %}
-            </ul>
-        </nav>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Biểu đồ trạng thái
-    fetch('{{ url_for("api_thong_ke_trang_thai") }}')
-        .then(response => response.json())
-        .then(data => {
-            const ctx = document.getElementById('statusChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: data.labels,
-                    datasets: [{
-                        data: data.data,
-                        backgroundColor: ['#198754', '#0d6efd', '#ffc107', '#dc3545']
-                    }]
-                }
-            });
-        });
-
-    // Biểu đồ tỷ lệ thành công
-    fetch('{{ url_for("api_thong_ke_nang_suat") }}')
-        .then(response => response.json())
-        .then(data => {
-            const ctx = document.getElementById('successRateChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.labels,
-                    datasets: [{
-                        label: 'Tỷ lệ thành công (%)',
-                        data: data.data,
-                        borderColor: '#0d6efd',
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100
-                        }
-                    }
-                }
-            });
-        });
-});
-</script>
 {% endblock %}

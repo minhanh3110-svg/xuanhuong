@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Chỉnh sửa thông tin cá nhân</h3>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="row mb-4">
+                            <div class="col-md-4 text-center">
+                                <img src="{{ current_user.avatar_url or url_for('static', filename='img/default-avatar.png') }}" 
+                                     class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                                <div class="mb-3">
+                                    <label for="avatar" class="form-label">Thay đổi ảnh đại diện</label>
+                                    <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="full_name" class="form-label">Họ và tên</label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name" 
+                                           value="{{ current_user.full_name }}" required>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="department" class="form-label">Phòng ban</label>
+                                        <select class="form-select" id="department" name="department">
+                                            <option value="">Chọn phòng ban</option>
+                                            {% for dept in departments %}
+                                            <option value="{{ dept }}" {% if current_user.department == dept %}selected{% endif %}>
+                                                {{ dept }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="position" class="form-label">Chức vụ</label>
+                                        <select class="form-select" id="position" name="position">
+                                            <option value="">Chọn chức vụ</option>
+                                            {% for pos in positions %}
+                                            <option value="{{ pos }}" {% if current_user.position == pos %}selected{% endif %}>
+                                                {{ pos }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Số điện thoại</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" 
+                                           value="{{ current_user.phone or '' }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="address" class="form-label">Địa chỉ</label>
+                                    <textarea class="form-control" id="address" name="address" rows="2">{{ current_user.address or '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                            <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">Quay lại</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

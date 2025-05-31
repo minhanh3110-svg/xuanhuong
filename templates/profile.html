@@ -1,109 +1,133 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row">
-        <!-- Thông tin cá nhân -->
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h4>Thông tin cá nhân</h4>
-                </div>
-                <div class="card-body text-center">
-                    <img src="{{ current_user.avatar_url or url_for('static', filename='img/default-avatar.png') }}" 
-                         class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
-                    <h5 class="card-title">{{ current_user.full_name }}</h5>
-                    <p class="card-text text-muted">{{ current_user.position or 'Chưa cập nhật' }}</p>
-                    <p class="card-text text-muted">{{ current_user.department or 'Chưa cập nhật' }}</p>
-                    <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-primary">
-                        <i class="fas fa-edit"></i> Chỉnh sửa thông tin
-                    </a>
-                </div>
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Thông tin cá nhân</h3>
             </div>
-        </div>
-
-        <!-- Chi tiết thông tin -->
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h4>Chi tiết tài khoản</h4>
-                </div>
-                <div class="card-body">
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }}">{{ message }}</div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
-
-                    <div class="row mb-3">
-                        <div class="col-sm-3">
-                            <h6 class="mb-0">Tên đăng nhập</h6>
-                        </div>
-                        <div class="col-sm-9 text-secondary">
-                            {{ current_user.username }}
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-3">
-                            <h6 class="mb-0">Email</h6>
-                        </div>
-                        <div class="col-sm-9 text-secondary">
-                            {{ current_user.email }}
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-3">
-                            <h6 class="mb-0">Số điện thoại</h6>
-                        </div>
-                        <div class="col-sm-9 text-secondary">
-                            {{ current_user.phone or 'Chưa cập nhật' }}
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-3">
-                            <h6 class="mb-0">Địa chỉ</h6>
-                        </div>
-                        <div class="col-sm-9 text-secondary">
-                            {{ current_user.address or 'Chưa cập nhật' }}
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-3">
-                            <h6 class="mb-0">Ngày tạo</h6>
-                        </div>
-                        <div class="col-sm-9 text-secondary">
-                            {{ current_user.created_at.strftime('%d/%m/%Y') }}
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-3">
-                            <h6 class="mb-0">Đăng nhập cuối</h6>
-                        </div>
-                        <div class="col-sm-9 text-secondary">
-                            {{ current_user.last_login.strftime('%d/%m/%Y %H:%M') if current_user.last_login }}
-                        </div>
-                    </div>
-
-                    <hr>
-
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
                     <div class="row">
-                        <div class="col-sm-12">
-                            <a href="{{ url_for('auth.change_password') }}" class="btn btn-info">
-                                <i class="fas fa-key"></i> Đổi mật khẩu
-                            </a>
-                            <a href="{{ url_for('auth.activity_log') }}" class="btn btn-secondary">
-                                <i class="fas fa-history"></i> Lịch sử hoạt động
-                            </a>
-                            {% if not current_user.otp_enabled %}
-                            <a href="{{ url_for('auth.setup_2fa') }}" class="btn btn-warning">
-                                <i class="fas fa-shield-alt"></i> Bật xác thực 2 lớp
+                        <div class="col-md-4 text-center mb-3">
+                            <img src="{{ current_user.avatar_url or url_for('static', filename='images/default-avatar.png') }}" 
+                                 class="img-fluid rounded-circle mb-3" style="max-width: 200px;">
+                            <div class="mb-3">
+                                <label for="avatar" class="form-label">Thay đổi ảnh đại diện</label>
+                                <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Tên đăng nhập</label>
+                                <input type="text" class="form-control" value="{{ current_user.username }}" readonly>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" value="{{ current_user.email }}" readonly>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="full_name" class="form-label">Họ và tên</label>
+                                <input type="text" class="form-control" id="full_name" name="full_name" 
+                                       value="{{ current_user.full_name }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Số điện thoại</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       value="{{ current_user.phone }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="department" class="form-label">Phòng ban</label>
+                                <input type="text" class="form-control" id="department" name="department" 
+                                       value="{{ current_user.department }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="position" class="form-label">Chức vụ</label>
+                                <input type="text" class="form-control" id="position" name="position" 
+                                       value="{{ current_user.position }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>Bảo mật</h4>
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label">Mật khẩu hiện tại</label>
+                                <input type="password" class="form-control" id="current_password" name="current_password">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">Mật khẩu mới</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Xác nhận mật khẩu mới</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h4>Xác thực hai lớp</h4>
+                            {% if current_user.otp_enabled %}
+                            <p class="text-success">
+                                <i class="fas fa-check-circle"></i> Đã bật xác thực hai lớp
+                            </p>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#disable2FAModal">
+                                Tắt xác thực hai lớp
+                            </button>
+                            {% else %}
+                            <p class="text-warning">
+                                <i class="fas fa-exclamation-triangle"></i> Chưa bật xác thực hai lớp
+                            </p>
+                            <a href="{{ url_for('auth.setup_2fa') }}" class="btn btn-primary">
+                                Bật xác thực hai lớp
                             </a>
                             {% endif %}
                         </div>
                     </div>
-                </div>
+                    
+                    <hr>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal xác nhận tắt 2FA -->
+<div class="modal fade" id="disable2FAModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận tắt xác thực hai lớp</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn tắt xác thực hai lớp không?</p>
+                <p class="text-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Việc này sẽ làm giảm tính bảo mật cho tài khoản của bạn.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <form action="{{ url_for('auth.disable_2fa') }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Tắt xác thực hai lớp</button>
+                </form>
             </div>
         </div>
     </div>

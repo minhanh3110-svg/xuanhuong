@@ -1,0 +1,148 @@
+from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash
+from datetime import datetime
+from app import db, User, mail
+from flask_mail import Message
+
+auth = Blueprint('auth', __name__)
+
+@auth.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        full_name = request.form.get('full_name')
+        password = request.form.get('password')
+        department = request.form.get('department')
+        position = request.form.get('position')
+
+        # Kiểm tra dữ liệu
+        if not all([username, email, full_name, password]):
+            flash('Vui lòng điền đầy đủ thông tin bắt buộc', 'error')
+            return redirect(url_for('auth.register'))
+
+        # Kiểm tra username và email đã tồn tại chưa
+        if User.query.filter_by(username=username).first():
+            flash('Tên đăng nhập đã được sử dụng', 'error')
+            return redirect(url_for('auth.register'))
+
+        if User.query.filter_by(email=email).first():
+            flash('Email đã được sử dụng', 'error')
+            return redirect(url_for('auth.register'))
+
+        # Tạo user mới
+        user = User(
+            username=username,
+            email=email,
+            full_name=full_name,
+            department=department,
+            position=position,
+            role='user'  # Mặc định role là user
+        )
+        user.set_password(password)
+        
+        try:
+            db.session.add(user)
+            db.session.commit()
+
+            # Gửi email xác nhận
+            token = user.generate_confirmation_token()
+            confirm_url = url_for('auth.confirm_email', token=token, _external=True)
+            msg = Message('Xác nhận tài khoản',
+                        recipients=[user.email])
+            msg.html = render_template('email/confirm.html', 
+                                     user=user,
+                                     confirm_url=confirm_url)
+            mail.send(msg)
+
+            flash('Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.', 'success')
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+
+    departments = ['Phòng Nghiên cứu', 'Phòng Thí nghiệm', 'Phòng Quản lý']
+    positions = ['Nghiên cứu viên', 'Kỹ thuật viên', 'Quản lý', 'Nhân viên']
+    return render_template('auth/register.html', 
+                         departments=departments,
+                         positions=positions)
+
+@auth.route('/confirm/<token>')
+def confirm_email(token):
+    user = User.verify_confirmation_token(token)
+    if user is None:
+        flash('Link xác nhận không hợp lệ hoặc đã hết hạn', 'error')
+        return redirect(url_for('auth.login'))
+    
+    if user.is_active:
+        flash('Tài khoản đã được xác nhận rồi', 'info')
+    else:
+        user.is_active = True
+        db.session.commit()
+        flash('Xác nhận tài khoản thành công!', 'success')
+    
+    return redirect(url_for('auth.login'))
+
+@auth.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        remember = request.form.get('remember', False)
+        
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.check_password(password):
+            if not user.is_active:
+                flash('Vui lòng xác nhận email trước khi đăng nhập', 'warning')
+                return redirect(url_for('auth.login'))
+                
+            login_user(user, remember=remember)
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('index'))
+            
+        flash('Sai tên đăng nhập hoặc mật khẩu', 'error')
+    
+    return render_template('auth/login.html')
+
+@auth.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Đăng xuất thành công', 'success')
+    return redirect(url_for('auth.login'))
+
+@auth.route('/profile')
+@login_required
+def profile():
+    return render_template('auth/profile.html')
+
+@auth.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+
+        if not current_user.check_password(current_password):
+            flash('Mật khẩu hiện tại không đúng', 'error')
+            return redirect(url_for('auth.change_password'))
+
+        if new_password != confirm_password:
+            flash('Mật khẩu mới không khớp', 'error')
+            return redirect(url_for('auth.change_password'))
+
+        current_user.set_password(new_password)
+        db.session.commit()
+        flash('Đổi mật khẩu thành công', 'success')
+        return redirect(url_for('auth.profile'))
+
+    return render_template('auth/change_password.html') 
